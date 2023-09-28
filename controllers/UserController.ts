@@ -182,17 +182,17 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
             return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor not found!" });
         }
 
+        //^ if user already follow that vendor, unfollow 
         if (currentUser.followed.includes(vendor.vendorName)) {
-            const vendorIndex = currentUser.followed.indexOf(vendor.vendorName);
+            const vendorIndex = currentUser.followed.indexOf(vendor.vendorName); //^ get the index of followed vendor sa array
 
             vendor.vendorFollowers -= 1;
-            currentUser.followed.splice(vendorIndex, 1)
+            currentUser.followed.splice(vendorIndex, 1) //^ remove the followed vendor from array
 
             await Promise.all([vendor.save(), currentUser.save()]);
 
             return res.status(HttpStatusCodes.OK).json({ message: `You unfollowed ${vendor.vendorName}` });
         }
-
 
         vendor.vendorFollowers += 1;
         currentUser?.followed.push(vendor.vendorName);
@@ -201,7 +201,6 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
 
         return res.status(HttpStatusCodes.OK).json({ message: `You followed ${vendor.vendorName}` });
     }
-
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
