@@ -183,11 +183,18 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
         }
 
         if (currentUser.followed.includes(vendor.vendorName)) {
-            return res.status(HttpStatusCodes.OK).json({ message: `You already followed ${vendor.vendorName}` });
+            const vendorIndex = currentUser.followed.indexOf(vendor.vendorName);
+
+            vendor.vendorFollowers -= 1;
+            currentUser.followed.splice(vendorIndex, 1)
+
+            await Promise.all([vendor.save(), currentUser.save()]);
+
+            return res.status(HttpStatusCodes.OK).json({ message: `You unfollowed ${vendor.vendorName}` });
         }
 
-        //^ if okay ang lahat: increment vendor follower and update user's followed list
-        vendor.vendorFollowers++;
+
+        vendor.vendorFollowers += 1;
         currentUser?.followed.push(vendor.vendorName);
 
         await Promise.all([vendor.save(), currentUser.save()]);
@@ -205,12 +212,13 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
 //* ADD ORDER 
 export const AddOrder = async (req: Request, res: Response, next: NextFunction) => {
     const { items } = <IAddOrder>req.body;
-    console.log(items);
-    
-    const orders = [];
-    let totalAmountOfAllItems: number = 0;
 
     try {
+        if (!req.body.items || !Array.isArray(req.body.items)) return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid request format" });
+
+        const orders = [];
+        let totalAmountOfAllItems: number = 0;
+
         const getUser = await UserModel.findById(req.user?._id);
 
         if (!getUser) return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
@@ -223,8 +231,11 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
                 return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
             }
 
+            //^ guard clause kapag nag kiddy inspect sa item quantity
+            if (getItem.itemQuantity < item.itemQuantity) return res.status(HttpStatusCodes.BadRequest).json({ message: "Something went wrong!" });
+
             totalAmountOfAllItems += (getItem.itemPrice * item.itemQuantity);
-            
+
             orders.push({
                 itemID: getItem._id,
                 quantity: getItem.itemQuantity,
@@ -238,7 +249,7 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
         //     totalAmount: totalAmountOfAllItems
         // });
 
-        res.status(HttpStatusCodes.OK).json({ data: { totalAmountOfAllItems, orders } });
+        return res.status(HttpStatusCodes.OK).json({ data: { totalAmountOfAllItems, orders } });
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
