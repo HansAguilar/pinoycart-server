@@ -13,11 +13,11 @@ interface UserDoc extends Document {
     password: string,
     email: string,
     phone: string,
-    address: {
-        city: string,
-        street: string,
-        postal: string
-    },
+    // address: {
+    //     city: string,
+    //     street: string,
+    //     postal: string
+    // },
     role: string,
     orders: string,
     followed: [string],
@@ -31,11 +31,11 @@ const UserSchema = new Schema(
         password: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         phone: { type: String, required: true, unique: true },
-        address: {
-            city: { type: String },
-            street: { type: String },
-            postal: { type: String }
-        },
+        // address: {
+        //     city: { type: String },
+        //     street: { type: String },
+        //     postal: { type: String }
+        // },
         role: { type: String, required: true, default: "customer" },
         orders: { type: mongoose.Schema.Types.ObjectId, ref: 'orders' },
         followed: { type: [String] },

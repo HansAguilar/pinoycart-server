@@ -7,7 +7,7 @@ import { HttpStatusCodes } from "../utility";
 
 //* REGISTER USER
 export const CreateUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { username, password, email, phone, address } = <ICreateUser>req.body;
+    const { username, password, email, phone } = <ICreateUser>req.body;
 
     try {
         const existingUser = await UserModel.findOne({ $or: [{ email: email }, { phone: phone }] });
@@ -26,14 +26,8 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
             password: hashPassword,
             email: email,
             phone: phone,
-            address: {
-                city: address.city,
-                street: address.street,
-                postal: address.postal
-            },
             vendorInfo: null
         });
-
 
         res.status(HttpStatusCodes.Created).json({ message: "Account Created Successfully!" });
     }
@@ -47,7 +41,7 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
 
 //* EDIT USER
 export const EditUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { email, phone, address } = <IUserEditInput>req.body;
+    const { email, phone } = <IUserEditInput>req.body;
     const user = req.user;
 
     try {
@@ -64,7 +58,6 @@ export const EditUser = async (req: Request, res: Response, next: NextFunction) 
 
         userExist.email = email;
         userExist.phone = phone;
-        userExist.address = address;
 
         await userExist.save();
 
@@ -224,6 +217,14 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
         if (getUser.role === "vendor") return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor cannot add an order!" });
 
         for (let item of items) {
+            if (
+                typeof item.itemQuantity !== 'number' ||
+                isNaN(item.itemQuantity) ||
+                item.itemQuantity.toString().includes("'")
+            ) {
+                return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid request format" });
+            }
+
             const getItem = await ItemModel.findById(item.itemID);
 
             if (!getItem) {
@@ -235,20 +236,26 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
 
             totalAmountOfAllItems += (getItem.itemPrice * item.itemQuantity);
 
+            //^ insert sa items field ng Order model
             orders.push({
                 itemID: getItem._id,
-                quantity: getItem.itemQuantity,
-                price: getItem.itemPrice
+                quantity: item.itemQuantity,
+                price: getItem.itemPrice,
+                deliveryAddress: {
+                    city: item.deliveryAddress.city,
+                    street: item.deliveryAddress.street,
+                    postal: item.deliveryAddress.postal
+                }
             });
         }
 
-        // const orderCreated = await OrderModel.create({
-        //     customerID: getUser._id,
-        //     items: orders,
-        //     totalAmount: totalAmountOfAllItems
-        // });
+        const orderCreated = await OrderModel.create({
+            customerID: getUser._id,
+            items: orders,
+            totalAmount: totalAmountOfAllItems
+        });
 
-        return res.status(HttpStatusCodes.OK).json({ data: { totalAmountOfAllItems, orders } });
+        return res.status(HttpStatusCodes.OK).json({ data: orderCreated });
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });

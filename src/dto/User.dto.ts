@@ -3,11 +3,6 @@ export interface ICreateUser {
     password: string,
     email: string,
     phone: string,
-    address: {
-        city: string,
-        street: string,
-        postal: string
-    },
     role: string
 };
 
@@ -19,11 +14,6 @@ export interface IUserLoginInput {
 export interface IUserEditInput {
     email: string,
     phone: string,
-    address: {
-        city: string,
-        street: string,
-        postal: string
-    }
 };
 
 export interface IUserPayload {
@@ -37,7 +27,12 @@ export interface IAddOrder {
     items: [
         {
             itemID: string,
-            itemQuantity: number
+            itemQuantity: number,
+            deliveryAddress: {
+                city: string,
+                street: string,
+                postal: string
+            }
         }
     ]
 };

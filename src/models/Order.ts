@@ -28,16 +28,16 @@ const OrderSchema = new Schema(
                 itemID: { type: mongoose.Schema.Types.ObjectId, ref: 'items', required: true },
                 quantity: { type: Number, required: true },
                 price: { type: Number, required: true },
+                deliveryAddress: {
+                    city: { type: String },
+                    street: { type: String },
+                    postal: { type: String }
+                },
             }
         ],
         totalAmount: { type: Number, required: true },
         orderStatus: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered'], default: 'pending' },
         orderDate: { type: Date, default: Date.now },
-        deliveryAddress: {
-            city: { type: String },
-            street: { type: String },
-            postal: { type: String }
-        },
     },
     {
         timestamps: true
