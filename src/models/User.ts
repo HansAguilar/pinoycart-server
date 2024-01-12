@@ -18,8 +18,14 @@ interface UserDoc extends Document {
     //     street: string,
     //     postal: string
     // },
+    cart: [
+        {
+            itemID: string,
+            itemQuantity: number
+        }
+    ],
     role: string,
-    orders: string,
+    orders: [string],
     followed: [string],
     vendorInfo: Vendor | null
 };
@@ -36,8 +42,14 @@ const UserSchema = new Schema(
         //     street: { type: String },
         //     postal: { type: String }
         // },
+        cart: [
+            {
+                itemID: { type: String },
+                itemQuantity: { type: Number }
+            }
+        ],
         role: { type: String, required: true, default: "customer" },
-        orders: { type: mongoose.Schema.Types.ObjectId, ref: 'orders' },
+        orders: [{ type: mongoose.Schema.Types.ObjectId, ref: 'orders' }],
         followed: { type: [String] },
         vendorInfo: { type: mongoose.Schema.Types.ObjectId, ref: 'vendors' }
     },

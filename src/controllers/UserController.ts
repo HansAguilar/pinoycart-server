@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { IAddOrder, ICreateUser, IUserEditInput, IUserLoginInput } from "../dto/User.dto";
+import { IUserOrder, ICreateUser, IUserEditInput, IUserLoginInput, ICart } from "../dto/User.dto";
 import { ItemModel, OrderModel, UserModel, VendorModel } from "../models";
-import { GenerateHashPassword, GenerateSalt, GenerateSignToken, ValidatePassword, isValidObjectId } from "../utility";
+import { GenerateHashPassword, GenerateSalt, GenerateSignToken, ValidatePassword, isValidObjectId, verifyToken } from "../utility";
 import { IFollowVendorID } from "../dto/Vendor.dto";
 import { HttpStatusCodes } from "../utility";
 
@@ -14,7 +14,7 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
 
         //^ if user already exists
         if (existingUser) {
-            return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, email or phone number already exists!." });
+            return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, email or phone number already exists" });
         }
 
         //^ hash the password
@@ -26,6 +26,7 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
             password: hashPassword,
             email: email,
             phone: phone,
+            orders: [],
             vendorInfo: null
         });
 
@@ -53,7 +54,7 @@ export const EditUser = async (req: Request, res: Response, next: NextFunction) 
 
         const existingUser = await UserModel.findOne({ $or: [{ email: email }, { phone: phone }] });
         if (existingUser) {
-            return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, email or phone number already exists!" });
+            return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, email or phone number already exists" });
         }
 
         userExist.email = email;
@@ -99,7 +100,8 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }
 
-        const getUser = await UserModel.findOne({ _id: userID });
+        const getUser = await UserModel.findOne({ _id: userID }, '-password -__v -createdAt -updatedAt').populate("orders", '-__v -createdAt -updatedAt');
+        // await UserModel.findOne({ _id: userID })
 
         if (!getUser) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
@@ -122,11 +124,12 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
     try {
         const usernameExist = await UserModel.findOne({ username: username });
 
-        if (!usernameExist) {
-            return res.status(HttpStatusCodes.Unauthorized).json({ message: "Username or Password is incorrect!" });
+        if (usernameExist == null) {
+            return res.status(HttpStatusCodes.Unauthorized).json({ message: "Username or Password is incorrect" });
         }
 
         const validate = await ValidatePassword(password, usernameExist.password);
+
         if (validate) {
             const sig = GenerateSignToken({
                 _id: usernameExist._id,
@@ -134,10 +137,18 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
                 email: usernameExist.email,
                 role: usernameExist.role,
             });
-            return res.status(HttpStatusCodes.OK).json({ message: "Login Successfull!", token: sig });
+
+            res.cookie("token", sig, {
+                httpOnly: true,
+                maxAge: 60000
+            })
+
+            return res.status(HttpStatusCodes.OK).json({ message: "Login Successfull", token: sig });
         }
 
-        return res.status(HttpStatusCodes.Unauthorized).json({ message: "Username or Password is incorrect!" });
+        else {
+            return res.status(HttpStatusCodes.Unauthorized).json({ message: "Username or Password is incorrect" });
+        }
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
@@ -152,28 +163,23 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
         const { followVendor } = <IFollowVendorID>req.body;
         const validID = isValidObjectId(followVendor);
 
-        if (!validID) {
-            return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor not found!" });
-        }
+        if (!validID) return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor not found!" });
 
         const currentUser = await UserModel.findById(req.user?._id);
 
         //^ check kung may exploit
-        if (!currentUser) {
-            return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
-        }
+        if (!currentUser) return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
 
         //^ check kung vendor yung nag re-request
-        if (currentUser.role === "vendor") {
-            return res.status(HttpStatusCodes.BadRequest).json({ message: "Vendors cannot follow other vendors!" });
-        }
+        if (currentUser.role === "vendor") return res.status(HttpStatusCodes.BadRequest).json({ message: "Vendors cannot follow other vendors!" });
+
 
         //^ -------------------------- SAFE BELOW ------------------------------
+
         const vendor = await VendorModel.findById(followVendor); //^ find vendors id from body
 
-        if (!vendor) {
-            return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor not found!" });
-        }
+        if (!vendor) return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor not found!" });
+
 
         //^ if user already follow that vendor, unfollow 
         if (currentUser.followed.includes(vendor.vendorName)) {
@@ -202,18 +208,27 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
 
 
 //* ADD ORDER 
+//! TODO: 
 export const AddOrder = async (req: Request, res: Response, next: NextFunction) => {
-    const { items } = <IAddOrder>req.body;
+    const { items } = <IUserOrder>req.body;
 
     try {
-        if (!req.body.items || !Array.isArray(req.body.items)) return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid request format" });
+        if (items.length <= 1) {
+            const VALID_ID = isValidObjectId(items[0].itemID);
+            if (!VALID_ID) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
+        }
+        else {
+            items.map((item) => {
+                if (/^[0-9a-fA-F]{24}$/.test(item.itemID)) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
+            })
+        }
+        if (items || !Array.isArray(items)) return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid request format" });
 
-        const orders = [];
+        let orders = [];
         let totalAmountOfAllItems: number = 0;
 
         const getUser = await UserModel.findById(req.user?._id);
 
-        if (!getUser) return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         if (getUser.role === "vendor") return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor cannot add an order!" });
 
         for (let item of items) {
@@ -221,20 +236,14 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
                 typeof item.itemQuantity !== 'number' ||
                 isNaN(item.itemQuantity) ||
                 item.itemQuantity.toString().includes("'")
-            ) {
-                return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid request format" });
-            }
+            ) return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid request format" });
 
             const getItem = await ItemModel.findById(item.itemID);
 
-            if (!getItem) {
-                return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
-            }
+            if (!getItem) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
 
             //^ guard clause kapag nag kiddy inspect sa item quantity
-            if (getItem.itemQuantity < item.itemQuantity) return res.status(HttpStatusCodes.BadRequest).json({ message: "Something went wrong!" });
-
-            totalAmountOfAllItems += (getItem.itemPrice * item.itemQuantity);
+            if (getItem.itemStock < item.itemQuantity) return res.status(HttpStatusCodes.BadRequest).json({ message: "Something went wrong!" });
 
             //^ insert sa items field ng Order model
             orders.push({
@@ -247,6 +256,8 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
                     postal: item.deliveryAddress.postal
                 }
             });
+
+            totalAmountOfAllItems += (getItem.itemPrice * item.itemQuantity);
         }
 
         const orderCreated = await OrderModel.create({
@@ -255,7 +266,13 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
             totalAmount: totalAmountOfAllItems
         });
 
-        return res.status(HttpStatusCodes.OK).json({ data: orderCreated });
+        getUser.orders.push(orderCreated._id);
+        getUser.save();
+
+        orders = [];
+        totalAmountOfAllItems = 0;
+
+        return res.status(HttpStatusCodes.Created).json({ data: orderCreated });
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
@@ -264,9 +281,174 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
 
 
 
+//* UPDATE ORDER BY ID
+//! TODO: UPDATE ORDER BY ID
+export const UpdateOrder = async (req: Request, res: Response, next: NextFunction) => {
+    const orderID = req.params.orderID;
+    const { items } = <IUserOrder>req.body;
+    try {
+        const isOrderExist = await OrderModel.findById(orderID);
+        return res.json({ data: isOrderExist });
 
-//* GET USER ORDERS 
-export const GetOrders = async (req: Request, res: Response, next: NextFunction) => {
-
+    }
+    catch (error) {
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
 }
 
+
+//* ADD TO CART 
+export const AddToCart = async (req: Request, res: Response, next: NextFunction) => {
+    const { items } = <ICart>req.body;
+    try {
+        const getUser = await UserModel.findById(req.user?._id);
+
+        if (!getUser) {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
+        }
+
+        if (getUser.role === "vendor") {
+            return res.status(HttpStatusCodes.Forbidden).json({ message: "Vendors cannot add items to the cart!" });
+        }
+
+        for (let item of items) {
+            let getItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -updatedAt -itemReviews');
+
+            if (!getItem) {
+                return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
+            }
+
+            // Find the index of the item in the user's cart
+            const cartIndex = getUser.cart.findIndex((cartItem) => cartItem.itemID === item.itemID);
+
+            if (cartIndex !== -1) {
+                // Item is already in the cart, increment the quantity
+                getUser.cart[cartIndex].itemQuantity += 1;
+            } else {
+                // Item is not in the cart, add it
+                getUser.cart.push({
+                    itemID: item.itemID,
+                    itemQuantity: item.itemQuantity,
+                });
+            }
+        }
+
+        await getUser.save();
+        return res.status(HttpStatusCodes.Created).json({ message: "Added to cart!" })
+    }
+    catch (error) {
+        console.log(error)
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
+}
+
+
+
+//* GET USER CART 
+export const GetCart = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const getUser = await UserModel.findById(req.user?._id).select("cart");
+
+        if (!getUser) return res.status(HttpStatusCodes.NotFound).json({ message: "User not found" });
+
+        if (getUser.cart.length <= 0) return res.status(HttpStatusCodes.NotFound).json({ message: "No item in your cart!" });
+
+        // let cartItems = [];
+
+        // for (const item of getUser.cart) {
+        //     const cartItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -itemReviews');
+        //     if (cartItem) {
+        //         cartItems.push(cartItem);
+        //     }
+        // }
+
+        res.status(HttpStatusCodes.OK).json({ data: getUser });
+        // cartItems = [];
+        return;
+    } catch (error) {
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
+};
+
+
+
+//* REMOVE USER CART ITEM 
+export const DeleteCartItemByID = async (req: Request, res: Response, next: NextFunction) => {
+    const getItemID = req.body.cartID;
+    try {
+        const getItem = ItemModel.findOne({ _id: getItemID });
+
+        if (!getItem) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
+
+        const getUser = await UserModel.findById(req.user?._id);
+
+        if (!getUser) {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
+        }
+
+        // Find the index of the item in the user's cart
+        const cartIndex = getUser.cart.findIndex((cartItem) => cartItem.itemID === getItemID);
+
+        if (cartIndex !== -1) {
+            // Remove the item and its quantity from the cart arrays
+            getUser.cart.splice(cartIndex, 1);
+
+            // Save the updated user document
+            await getUser.save();
+
+            return res.status(HttpStatusCodes.OK).json({ message: "Item removed from the cart!" });
+        } else {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found in the user's cart!" });
+        }
+    } catch (error) {
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
+};
+
+
+
+
+//* CLEAR USER CART 
+export const ClearCart = async (req: Request, res: Response, next: NextFunction) => {
+    const getItemID = req.body.cartID;
+    try {
+        const getItem = ItemModel.findOne({ _id: getItemID });
+
+        if (!getItem) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
+
+        const getUser = await UserModel.findById(req.user?._id);
+
+        if (!getUser) {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
+        }
+
+        getUser.cart.splice(0, getUser.cart.length);
+
+        await getUser.save();
+        return res.status(HttpStatusCodes.OK).json({ message: "Clear cart successfully!" });
+    }
+    catch (error) {
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
+};
+
+
+
+//* VERIFY USER TOKEN
+export const VerifyUserToken = async (req: Request, res: Response, next: NextFunction) => {
+    const { token } = req.body;
+
+    try {
+        if (token) {
+            verifyToken(token);
+            return next();
+        }
+        else{
+            return res.status(HttpStatusCodes.OK).json({ message: token });
+        }
+        // return res.status(HttpStatusCodes.OK).json({ message: "Clear cart successfully!" });
+    }
+    catch (error) {
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
+}

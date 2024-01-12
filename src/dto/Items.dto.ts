@@ -3,6 +3,12 @@ export interface IAddItem {
     itemDesc: string,
     itemPrice: number,
     itemCategory: [string],
-    itemQuantity: number,
+    itemStock: number,
 };
 
+
+export interface IReview {
+    itemID: string,
+    rating: number,
+    comment: string
+}

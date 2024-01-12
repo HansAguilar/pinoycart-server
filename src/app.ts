@@ -2,7 +2,6 @@ import express from "express";
 import ExpressApp from "./services/ExpressApp";
 import Database from "./services/Database";
 
-
 const StartServer = async () => {
     const app = express();
 

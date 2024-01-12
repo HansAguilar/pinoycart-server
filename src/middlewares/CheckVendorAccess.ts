@@ -9,7 +9,7 @@ export const CheckVendorAccess = async (req: Request, res: Response, next: NextF
             next();
         }
         else {
-            res.status(HttpStatusCodes.Forbidden).json({ message: "You are not authorized!" });
+            res.status(HttpStatusCodes.Forbidden).json({ message: "MW: You are not authorized!" });
         }
     }
     catch (error) {

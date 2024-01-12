@@ -23,7 +23,7 @@ export const ValidatePassword = async (password: string, hashPasswordFromDB: str
 
 
 export const GenerateSignToken = (payload: IUserPayload) => {
-    return jwt.sign(payload, APP_X_KEY, { expiresIn: '1d' })
+    return jwt.sign(payload, APP_X_KEY, { expiresIn: '30min' })
 };
 
 
@@ -36,7 +36,15 @@ export const ValidateSignToken = (req: Request) => {
         req.user = payload;
         return true;
     }
-    
     //^ else
+    return false;
+};
+
+export const verifyToken = (token: string) => {
+    if (token) {
+        const verifyRes = jwt.verify(token.split(' ')[1], APP_X_KEY) as AuthPayload;
+        console.log("VerifyTokenUtil" + verifyRes);
+        return true;
+    }
     return false;
 };

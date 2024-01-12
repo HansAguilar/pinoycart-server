@@ -23,7 +23,7 @@ export interface IUserPayload {
     role: string
 };
 
-export interface IAddOrder {
+export interface IUserOrder {
     items: [
         {
             itemID: string,
@@ -33,6 +33,16 @@ export interface IAddOrder {
                 street: string,
                 postal: string
             }
+        }
+    ]
+};
+
+
+export interface ICart {
+    items: [
+        {
+            itemID: string,
+            itemQuantity: number
         }
     ]
 };

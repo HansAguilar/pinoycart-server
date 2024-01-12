@@ -7,25 +7,35 @@ interface ItemDoc extends Document {
     itemDesc: string,
     itemPrice: number,
     itemCategory: [string],
-    itemQuantity: number,
+    itemStock: number,
     itemImages: [string],
     itemLikes: number,
     itemRatings: number,
-    itemReviews: [string],
+    itemReviews: [
+        {
+            userID: string,
+            rating: number,
+            comment: string
+        }
+    ],
 };
 
 const ItemSchema = new Schema(
     {
         vendorID: { type: mongoose.Schema.Types.ObjectId, ref: 'vendors' },
-        itemName: { type: String, required: true },
-        itemDesc: { type: String, required: true },
-        itemPrice: { type: Number, required: true },
-        itemQuantity: { type: Number },
+        itemName: { type: String, },
+        itemDesc: { type: String, },
+        itemPrice: { type: Number, },
+        itemStock: { type: Number },
         itemCategory: { type: [String] },
         itemImages: { type: [String], },
         itemLikes: { type: Number },
         itemRatings: { type: Number },
-        itemReviews: { type: [String] },
+        itemReviews: [{
+            userID: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
+            rating: { type: Number },
+            comment: { type: String }
+        }],
     },
     {
         timestamps: true
