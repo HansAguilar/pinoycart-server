@@ -4,6 +4,9 @@ import { ItemModel, OrderModel, UserModel, VendorModel } from "../models";
 import { GenerateHashPassword, GenerateSalt, GenerateSignToken, ValidatePassword, isValidObjectId, verifyToken } from "../utility";
 import { IFollowVendorID } from "../dto/Vendor.dto";
 import { HttpStatusCodes } from "../utility";
+import jwt from "jsonwebtoken";
+import { APP_X_KEY } from "../config";
+import { AuthPayload } from "../dto/Auth.dto";
 
 //* REGISTER USER
 export const CreateUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -140,7 +143,7 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
 
             res.cookie("token", sig, {
                 httpOnly: true,
-                maxAge: 60000
+                maxAge: 9960000
             })
 
             return res.status(HttpStatusCodes.OK).json({ message: "Login Successfull", token: sig });
@@ -437,16 +440,15 @@ export const ClearCart = async (req: Request, res: Response, next: NextFunction)
 //* VERIFY USER TOKEN
 export const VerifyUserToken = async (req: Request, res: Response, next: NextFunction) => {
     const { token } = req.body;
-
     try {
-        if (token) {
-            verifyToken(token);
-            return next();
+        const payload = verifyToken(token);
+        if (payload) {
+            const user = await UserModel.findOne({ _id: payload._id }, '-__v -createdAt -updatedAt -password');
+            return res.status(HttpStatusCodes.OK).json({ data: user });
         }
-        else{
-            return res.status(HttpStatusCodes.OK).json({ message: token });
+        else {  
+            return res.status(HttpStatusCodes.Unauthorized).json({ message: token });
         }
-        // return res.status(HttpStatusCodes.OK).json({ message: "Clear cart successfully!" });
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });

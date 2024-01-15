@@ -42,9 +42,7 @@ export const ValidateSignToken = (req: Request) => {
 
 export const verifyToken = (token: string) => {
     if (token) {
-        const verifyRes = jwt.verify(token.split(' ')[1], APP_X_KEY) as AuthPayload;
-        console.log("VerifyTokenUtil" + verifyRes);
-        return true;
+        return jwt.verify(token, APP_X_KEY) as AuthPayload;
     }
     return false;
 };
