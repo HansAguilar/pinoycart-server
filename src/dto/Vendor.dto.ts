@@ -1,6 +1,7 @@
 export interface ICreateVendor{
-    vendorName: string,
-    vendorDesc: string
+    vendorName: string;
+    vendorDesc: string;
+    file: string
 }
 
 export interface IFollowVendorID{

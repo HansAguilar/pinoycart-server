@@ -1,7 +1,5 @@
 import express, { Application } from "express";
 import cors from "cors";
-import path from "path";
-
 import { ItemRoutes, UserRoutes, VendorRoutes, PaymentRoutes } from "../routes";
 
 export default async (app: Application) => {
@@ -12,6 +10,7 @@ export default async (app: Application) => {
     })); //! this solves the cors problem in frontend
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+
     app.use('/uploads', express.static('uploads'));
 
     app.use("/api/v1", [UserRoutes, VendorRoutes, ItemRoutes, PaymentRoutes]);

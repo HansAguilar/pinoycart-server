@@ -3,7 +3,7 @@ export interface IAddItem {
     itemDesc: string,
     itemPrice: number,
     itemCategory: [string],
-    itemStock: number,
+    itemQuantity: number,
 };
 
 

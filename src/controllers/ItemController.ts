@@ -5,7 +5,7 @@ import { IAddItem, IReview } from "../dto/Items.dto";
 
 //^ ADD ITEM
 export const AddItem = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemName, itemDesc, itemCategory, itemPrice, itemStock } = <IAddItem>req.body;
+    const { itemName, itemDesc, itemCategory, itemPrice, itemQuantity } = <IAddItem>req.body;
     const user = req.user;
 
     try {
@@ -21,7 +21,7 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
                 itemDesc: itemDesc,
                 itemCategory: itemCategory,
                 itemPrice: itemPrice,
-                itemStock: itemStock,
+                itemQuantity: itemQuantity,
                 itemImages: images
             });
 
@@ -43,7 +43,7 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
 
 //^ UPDATE ITEM
 export const UpdateItemByID = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemName, itemDesc, itemCategory, itemPrice, itemStock } = <IAddItem>req.body;
+    const { itemName, itemDesc, itemCategory, itemPrice, itemQuantity } = <IAddItem>req.body;
     const itemID = req.params.itemID;
     const user = req.user;
 
@@ -64,7 +64,7 @@ export const UpdateItemByID = async (req: Request, res: Response, next: NextFunc
                             itemDesc: itemDesc,
                             itemCategory: itemCategory,
                             itemPrice: itemPrice,
-                            itemStock: itemStock,
+                            itemQuantity: itemQuantity,
                             itemImages: images
                         }
                     }

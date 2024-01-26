@@ -6,10 +6,13 @@ import { HttpStatusCodes } from "../utility";
 
 //^ CREATE VENDOR
 export const CreateVendor = async (req: Request, res: Response, next: NextFunction) => {
-    const { vendorName, vendorDesc } = <ICreateVendor>req.body;
+    const { vendorName, vendorDesc } = req.body;
+    console.log(req.body);
     const user = req.user;
+    console.log(req.file);
 
     try {
+
         const getUser = await UserModel.findById(user?._id);
         const isExistingVendor = await VendorModel.findOne({ vendorName: vendorName });
 
@@ -29,7 +32,7 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
                 vendorDesc: vendorDesc,
                 vendorRatings: 0,
                 vendorFollowers: 0,
-                vendorBanner: file?.path,
+                vendorBanner: file?.filename,
                 vendorFeedback: [],
                 vendorItems: []
             });
@@ -41,11 +44,11 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
             return res.status(HttpStatusCodes.Created).json({ message: "You can now sell!" });
         }
 
-        return res.status(HttpStatusCodes.NoContent).end(); // Return 204 with no response body
+        return res.status(HttpStatusCodes.NoContent).end();
     }
     catch (error) {
         console.log(error);
-        
+
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
@@ -57,6 +60,7 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
     try {
         const user = req.user?._id;
         const { vendorName, vendorDesc } = <ICreateVendor>req.body;
+        console.log(req.body);
 
         const existingVendor = await VendorModel.findOne({ userID: user });
 
@@ -86,9 +90,11 @@ export const UpdateVendorBanner = async (req: Request, res: Response, next: Next
 
         if (existingVendor) {
             const file = req.file;
+            console.log(req.file);
+            
 
             if (file) {
-                existingVendor.vendorBanner = file!.path;
+                existingVendor.vendorBanner = file!.filename;
 
                 await existingVendor.save();
                 return res.status(HttpStatusCodes.OK).json({ message: "Vendor banner updated successfully" });
@@ -128,9 +134,9 @@ export const GetAllVendor = async (req: Request, res: Response, next: NextFuncti
 
 //^ GET VENDOR BY ID
 export const GetVendorById = async (req: Request, res: Response, next: NextFunction) => {
-    const { getVendorID } = req.body;
+    const { vendorID } = req.body;
     try {
-        const getVendors = await VendorModel.findById(getVendorID);
+        const getVendors = await VendorModel.findById(vendorID);
 
         if (getVendors) {
             return res.status(HttpStatusCodes.OK).json({ data: getVendors });
