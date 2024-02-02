@@ -303,6 +303,9 @@ export const UpdateOrder = async (req: Request, res: Response, next: NextFunctio
 //* ADD TO CART 
 export const AddToCart = async (req: Request, res: Response, next: NextFunction) => {
     const { items } = <ICart>req.body;
+    console.log(typeof req.body);
+    console.log(req.body);
+    
     try {
         const getUser = await UserModel.findById(req.user?._id);
 
@@ -356,17 +359,17 @@ export const GetCart = async (req: Request, res: Response, next: NextFunction) =
 
         if (getUser.cart.length <= 0) return res.status(HttpStatusCodes.NotFound).json({ message: "No item in your cart!" });
 
-        // let cartItems = [];
+        let cartItems = [];
 
-        // for (const item of getUser.cart) {
-        //     const cartItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -itemReviews');
-        //     if (cartItem) {
-        //         cartItems.push(cartItem);
-        //     }
-        // }
-
-        res.status(HttpStatusCodes.OK).json({ data: getUser });
-        // cartItems = [];
+        for (const item of getUser.cart) {
+            const cartItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -itemReviews -updateAt');
+            if (cartItem) {
+                cartItems.push(cartItem);
+            }
+        }
+        
+        res.status(HttpStatusCodes.OK).json({ data: cartItems });
+        cartItems = [];
         return;
     } catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });

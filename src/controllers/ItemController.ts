@@ -95,7 +95,7 @@ export const UpdateItemByID = async (req: Request, res: Response, next: NextFunc
 //^ FETCH ALL ITEMS 
 export const GetAllItems = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const getItems = await ItemModel.find({}, '-password -__v -createdAt -updatedAt');
+        const getItems = await ItemModel.find({}, '-password -__v -createdAt -updatedAt').populate('vendorID', '-vendorItems');;
 
         if (getItems.length > 0) {
             return res.status(HttpStatusCodes.OK).json({ data: getItems });
@@ -114,6 +114,8 @@ export const GetAllItems = async (req: Request, res: Response, next: NextFunctio
 //^ FETCH ITEM BY ID
 export const GetItemByID = async (req: Request, res: Response, next: NextFunction) => {
     const itemID = req.params.itemID;
+    console.log(itemID);
+    
 
     try {
         if (!isValidObjectId(itemID)) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
@@ -122,6 +124,8 @@ export const GetItemByID = async (req: Request, res: Response, next: NextFunctio
         return res.status(HttpStatusCodes.OK).json({ getItem });
     }
     catch (error) {
+        console.log(error);
+        
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
