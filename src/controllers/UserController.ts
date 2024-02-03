@@ -303,9 +303,7 @@ export const UpdateOrder = async (req: Request, res: Response, next: NextFunctio
 //* ADD TO CART 
 export const AddToCart = async (req: Request, res: Response, next: NextFunction) => {
     const { items } = <ICart>req.body;
-    console.log(typeof req.body);
-    console.log(req.body);
-    
+
     try {
         const getUser = await UserModel.findById(req.user?._id);
 
@@ -354,6 +352,8 @@ export const AddToCart = async (req: Request, res: Response, next: NextFunction)
 export const GetCart = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const getUser = await UserModel.findById(req.user?._id).select("cart");
+        console.log(getUser);
+
 
         if (!getUser) return res.status(HttpStatusCodes.NotFound).json({ message: "User not found" });
 
@@ -363,11 +363,14 @@ export const GetCart = async (req: Request, res: Response, next: NextFunction) =
 
         for (const item of getUser.cart) {
             const cartItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -itemReviews -updateAt');
+            console.log(item.itemQuantity);
+
             if (cartItem) {
+                cartItem.itemQuantity = item.itemQuantity
                 cartItems.push(cartItem);
             }
         }
-        
+
         res.status(HttpStatusCodes.OK).json({ data: cartItems });
         cartItems = [];
         return;
@@ -449,7 +452,7 @@ export const VerifyUserToken = async (req: Request, res: Response, next: NextFun
             const user = await UserModel.findOne({ _id: payload._id }, '-__v -createdAt -updatedAt -password');
             return res.status(HttpStatusCodes.OK).json({ data: user });
         }
-        else {  
+        else {
             return res.status(HttpStatusCodes.Unauthorized).json({ message: token });
         }
     }

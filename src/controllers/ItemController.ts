@@ -114,9 +114,6 @@ export const GetAllItems = async (req: Request, res: Response, next: NextFunctio
 //^ FETCH ITEM BY ID
 export const GetItemByID = async (req: Request, res: Response, next: NextFunction) => {
     const itemID = req.params.itemID;
-    console.log(itemID);
-    
-
     try {
         if (!isValidObjectId(itemID)) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
 
