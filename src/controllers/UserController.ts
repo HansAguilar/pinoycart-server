@@ -327,7 +327,7 @@ export const AddToCart = async (req: Request, res: Response, next: NextFunction)
 
             if (cartIndex !== -1) {
                 // Item is already in the cart, increment the quantity
-                getUser.cart[cartIndex].itemQuantity += 1;
+                getUser.cart[cartIndex].itemQuantity += item.itemQuantity;
             } else {
                 // Item is not in the cart, add it
                 getUser.cart.push({
