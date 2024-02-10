@@ -5,7 +5,7 @@ import { IAddItem, IReview } from "../dto/Items.dto";
 
 //^ ADD ITEM
 export const AddItem = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemName, itemDesc, itemCategory, itemPrice, itemQuantity } = <IAddItem>req.body;
+    const { itemName, itemDesc, itemCategory, itemPrice, itemStock } = <IAddItem>req.body;
     const user = req.user;
 
     try {
@@ -21,8 +21,9 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
                 itemDesc: itemDesc,
                 itemCategory: itemCategory,
                 itemPrice: itemPrice,
-                itemQuantity: itemQuantity,
-                itemImages: images
+                itemStock: itemStock,
+                itemImages: images,
+                itemRatings: 0,
             });
 
             getVendor.vendorItems.push(itemCreated._id);
@@ -43,8 +44,7 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
 
 //^ UPDATE ITEM
 export const UpdateItemByID = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemName, itemDesc, itemCategory, itemPrice, itemQuantity } = <IAddItem>req.body;
-    const itemID = req.params.itemID;
+    const { itemID, itemName, itemDesc, itemCategory, itemPrice, itemStock } = <IAddItem>req.body;
     const user = req.user;
 
     try {
@@ -56,35 +56,31 @@ export const UpdateItemByID = async (req: Request, res: Response, next: NextFunc
                 const files = req.files as [Express.Multer.File];
                 const images = files.map((file: Express.Multer.File) => file.filename);
 
+                // Construct the update object based on provided fields
+                const updateObject: any = {};
+                if (itemName) updateObject.itemName = itemName;
+                if (itemDesc) updateObject.itemDesc = itemDesc;
+                if (itemCategory) updateObject.itemCategory = itemCategory;
+                if (itemPrice) updateObject.itemPrice = itemPrice;
+                if (itemStock) updateObject.itemStock = itemStock;
+                if (images.length > 0) updateObject.itemImages = images;
+
                 const updatedItem = await ItemModel.updateOne(
-                    { vendorID: getVendor._id }, // Update criteria
-                    {
-                        $set: {
-                            itemName: itemName,
-                            itemDesc: itemDesc,
-                            itemCategory: itemCategory,
-                            itemPrice: itemPrice,
-                            itemQuantity: itemQuantity,
-                            itemImages: images
-                        }
-                    }
+                    { _id: itemID, vendorID: getVendor._id }, // Update criteria
+                    { $set: updateObject }
                 );
 
                 if (updatedItem.acknowledged) {
                     return res.status(HttpStatusCodes.Created).json({ message: "Item Updated!" });
-                }
-                else {
+                } else {
                     return res.status(HttpStatusCodes.BadRequest).json({ message: "No matching document found for update." });
                 }
-            }
-
-            else {
+            } else {
                 return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found" });
             }
         }
         return res.status(HttpStatusCodes.Unauthorized).json({ message: "You are not a vendor" });
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
@@ -122,7 +118,7 @@ export const GetItemByID = async (req: Request, res: Response, next: NextFunctio
     }
     catch (error) {
         console.log(error);
-        
+
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
@@ -132,14 +128,27 @@ export const GetItemByID = async (req: Request, res: Response, next: NextFunctio
 
 //^ DELETE ITEM BY ID
 export const DeleteItemByID = async (req: Request, res: Response, next: NextFunction) => {
-    const itemID = req.params.itemID;
+    const { itemID } = req.body;
 
     try {
         if (!isValidObjectId(itemID)) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
         }
 
-        const deletedItem = await ItemModel.findByIdAndDelete(itemID);
+        const deletedItem = await ItemModel.findOneAndDelete({ _id: itemID });
+
+        const vendor = await VendorModel.findById(deletedItem.vendorID);
+
+        if (vendor) {
+            console.log("Before removal:", vendor.vendorItems);
+            vendor.vendorItems = vendor.vendorItems.filter(itemId => itemId !== itemID);
+            console.log("After removal:", vendor.vendorItems);
+
+            await vendor.save();
+        } else {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "Vendor not found!" });
+        }
+
 
         if (deletedItem) {
             return res.status(HttpStatusCodes.OK).json({ message: "Successfully deleted an item" });
@@ -148,6 +157,8 @@ export const DeleteItemByID = async (req: Request, res: Response, next: NextFunc
         return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
     }
     catch (error) {
+        console.log(error);
+
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };

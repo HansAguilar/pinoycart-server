@@ -9,8 +9,8 @@ interface VendorDoc extends Document {
     vendorBanner: string | null,
     vendorFollowers: number,
     vendorRatings: number,
-    vendorFeedback: [string],
-    vendorItems: [string]
+    vendorFeedback: string[],
+    vendorItems: string[]
 };
 
 const VendorSchema = new Schema(
@@ -22,7 +22,11 @@ const VendorSchema = new Schema(
         vendorFollowers: { type: Number },
         vendorRatings: { type: Number },
         vendorFeedback: { type: [String] },
-        vendorItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'items' }]
+        vendorItems: {
+            type: [String],
+            ref: 'items',
+            default: [],
+        },
     },
     {
         timestamps: true

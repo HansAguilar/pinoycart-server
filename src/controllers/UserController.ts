@@ -246,7 +246,7 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
             if (!getItem) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
 
             //^ guard clause kapag nag kiddy inspect sa item quantity
-            if (getItem.itemQuantity < item.itemQuantity) return res.status(HttpStatusCodes.BadRequest).json({ message: "Something went wrong!" });
+            if (getItem.itemStock < item.itemQuantity) return res.status(HttpStatusCodes.BadRequest).json({ message: "Something went wrong!" });
 
             //^ insert sa items field ng Order model
             orders.push({
@@ -366,7 +366,7 @@ export const GetCart = async (req: Request, res: Response, next: NextFunction) =
             console.log(item.itemQuantity);
 
             if (cartItem) {
-                cartItem.itemQuantity = item.itemQuantity
+                cartItem.itemStock = item.itemQuantity
                 cartItems.push(cartItem);
             }
         }

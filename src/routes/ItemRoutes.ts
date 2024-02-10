@@ -24,8 +24,8 @@ router.use(Authenticate);
 
 router.get("/get-items", GetAllItems);
 router.post("/add-item", images, AddItem);
-router.put("/update-item/:itemID", images, UpdateItemByID);
-router.delete("/delete-item/:itemID", DeleteItemByID);
+router.patch("/update-item", images, UpdateItemByID);
+router.post("/delete-item", DeleteItemByID);
 router.get("/get-item/:itemID", GetItemByID);
 
 

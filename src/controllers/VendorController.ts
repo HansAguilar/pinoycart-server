@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ICreateVendor } from "../dto/Vendor.dto";
-import { UserModel, VendorModel } from "../models";
+import { ItemModel, UserModel, VendorModel } from "../models";
 import { HttpStatusCodes } from "../utility";
 
 
@@ -21,7 +21,7 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
         }
 
         if (isExistingVendor) {
-            return res.status(HttpStatusCodes.BadRequest).json({ message: "Name already exists." });
+            return res.status(HttpStatusCodes.OK).json({ message: "Name already exists." });
         }
 
         if (getUser) {
@@ -91,7 +91,7 @@ export const UpdateVendorBanner = async (req: Request, res: Response, next: Next
         if (existingVendor) {
             const file = req.file;
             console.log(req.file);
-            
+
 
             if (file) {
                 existingVendor.vendorBanner = file!.filename;
@@ -137,9 +137,16 @@ export const GetVendorById = async (req: Request, res: Response, next: NextFunct
     const { vendorID } = req.body;
     try {
         const getVendors = await VendorModel.findById(vendorID);
+        let getItems = [];
 
         if (getVendors) {
-            return res.status(HttpStatusCodes.OK).json({ data: getVendors });
+            getItems = await Promise.all(
+                getVendors.vendorItems.map(async (item) => {
+                    return await ItemModel.findById(item);
+                })
+            );
+
+            return res.status(HttpStatusCodes.OK).json({ data: getVendors, vendorItems: getItems });
         }
 
         return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
