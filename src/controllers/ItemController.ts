@@ -90,6 +90,7 @@ export const UpdateItemByID = async (req: Request, res: Response, next: NextFunc
 
 //^ FETCH ALL ITEMS 
 export const GetAllItems = async (req: Request, res: Response, next: NextFunction) => {
+    console.log("items");
     try {
         const getItems = await ItemModel.find({}, '-password -__v -createdAt -updatedAt').populate('vendorID', '-vendorItems');;
 

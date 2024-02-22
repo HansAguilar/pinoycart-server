@@ -77,6 +77,7 @@ export const EditUser = async (req: Request, res: Response, next: NextFunction) 
 //* GET ALL USERS
 export const GetAllUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log("users");
         const users = await UserModel.find({}, '-password -__v -createdAt -updatedAt').populate("vendorInfo", '-__v -createdAt -updatedAt').exec();
 
         if (users.length <= 0) {

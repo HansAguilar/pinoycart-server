@@ -20,12 +20,13 @@ const imageStorage = multer.diskStorage({
 // const images = multer({ storage: imageStorage }).array("images", 5);
 const image = multer({ storage: imageStorage }).single("image");
 
-router.use(Authenticate);
+router.get("/get-vendors", GetAllVendor);
+router.post("/get-vendor", GetVendorById);
+
+// router.use(Authenticate);
 
 router.patch("/update-vendor-banner", image, UpdateVendorBanner);
 router.post("/create-vendor", image, CreateVendor);
-router.get("/get-vendors", GetAllVendor);
-router.post("/get-vendor", GetVendorById);
 router.patch("/update-vendor", UpdateVendor);
 
 export { router as VendorRoutes }

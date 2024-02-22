@@ -7,13 +7,11 @@ const router = express.Router();
 router.post("/user/register", CreateUser);
 router.post("/user/login", Login);
 router.post("/user/verify-token", VerifyUserToken);
-
-router.use(Authenticate);
 router.get("/get-users", GetAllUser);
 router.get("/get-user/:userID", GetUserById);
+
+// router.use(Authenticate);
 router.put("/edit-user", EditUser);
-
-
 router.post("/follow-vendor", FollowVendor);
 
 router.post("/add-cart", AddToCart);
