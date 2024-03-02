@@ -14,7 +14,6 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
 
     try {
         const existingUser = await UserModel.findOne({ $or: [{ email: email }, { phone: phone }] });
-
         //^ if user already exists
         if (existingUser) {
             return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, email or phone number already exists" });
@@ -77,7 +76,6 @@ export const EditUser = async (req: Request, res: Response, next: NextFunction) 
 //* GET ALL USERS
 export const GetAllUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        console.log("users");
         const users = await UserModel.find({}, '-password -__v -createdAt -updatedAt').populate("vendorInfo", '-__v -createdAt -updatedAt').exec();
 
         if (users.length <= 0) {
@@ -124,30 +122,25 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
 export const Login = async (req: Request, res: Response, next: NextFunction) => {
     const { username, password } = <IUserLoginInput>req.body;
 
-    //^ kunin natin ung username para makuha yung password
     try {
-        const usernameExist = await UserModel.findOne({ username: username });
+        const user = await UserModel.findOne({ username: username });
 
-        if (usernameExist == null) {
+        if (!user) {
             return res.status(HttpStatusCodes.Unauthorized).json({ message: "Username or Password is incorrect" });
         }
 
-        const validate = await ValidatePassword(password, usernameExist.password);
+        const isPasswordValid = await ValidatePassword(password, user.password);
 
-        if (validate) {
-            const sig = GenerateSignToken({
-                _id: usernameExist._id,
-                username: usernameExist.username,
-                email: usernameExist.email,
-                role: usernameExist.role,
-            });
+        if (isPasswordValid) {
+            const token = GenerateSignToken(user);
 
-            res.cookie("token", sig, {
+            res.cookie("token", token, {
                 httpOnly: true,
                 maxAge: 9960000
             })
 
-            return res.status(HttpStatusCodes.OK).json({ message: "Login Successfull", token: sig });
+            const userData = await UserModel.findOne({ _id: user._id }, '-__v -createdAt -updatedAt -password');
+            return res.status(HttpStatusCodes.OK).json({ message: "Login Successfull", token: token, data: userData });
         }
 
         else {
@@ -155,6 +148,8 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
         }
     }
     catch (error) {
+        console.log(error);
+        
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
@@ -353,12 +348,7 @@ export const AddToCart = async (req: Request, res: Response, next: NextFunction)
 export const GetCart = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const getUser = await UserModel.findById(req.user?._id).select("cart");
-        console.log(getUser);
-
-
-        if (!getUser) return res.status(HttpStatusCodes.NotFound).json({ message: "User not found" });
-
-        if (getUser.cart.length <= 0) return res.status(HttpStatusCodes.NotFound).json({ message: "No item in your cart!" });
+        if (!getUser || getUser.cart.length <= 0) return res.status(HttpStatusCodes.OK).json({ message: "No item in your cart!", data: [] });
 
         let cartItems = [];
 
@@ -376,6 +366,7 @@ export const GetCart = async (req: Request, res: Response, next: NextFunction) =
         cartItems = [];
         return;
     } catch (error) {
+        console.log(error);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };

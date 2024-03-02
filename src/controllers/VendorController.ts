@@ -116,8 +116,6 @@ export const UpdateVendorBanner = async (req: Request, res: Response, next: Next
 
 //^ GET ALL VENDORS
 export const GetAllVendor = async (req: Request, res: Response, next: NextFunction) => {
-    console.log("vendors");
-    
     try {
         const getVendors = await VendorModel.find({}, '-password -__v -createdAt -updatedAt');
 

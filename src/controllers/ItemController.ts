@@ -90,7 +90,6 @@ export const UpdateItemByID = async (req: Request, res: Response, next: NextFunc
 
 //^ FETCH ALL ITEMS 
 export const GetAllItems = async (req: Request, res: Response, next: NextFunction) => {
-    console.log("items");
     try {
         const getItems = await ItemModel.find({}, '-password -__v -createdAt -updatedAt').populate('vendorID', '-vendorItems');;
 
@@ -141,9 +140,7 @@ export const DeleteItemByID = async (req: Request, res: Response, next: NextFunc
         const vendor = await VendorModel.findById(deletedItem.vendorID);
 
         if (vendor) {
-            console.log("Before removal:", vendor.vendorItems);
             vendor.vendorItems = vendor.vendorItems.filter(itemId => itemId !== itemID);
-            console.log("After removal:", vendor.vendorItems);
 
             await vendor.save();
         } else {

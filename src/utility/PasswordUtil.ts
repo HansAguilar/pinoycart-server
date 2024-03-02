@@ -23,7 +23,13 @@ export const ValidatePassword = async (password: string, hashPasswordFromDB: str
 
 
 export const GenerateSignToken = (payload: IUserPayload) => {
-    return jwt.sign(payload, APP_X_KEY, { expiresIn: '30min' })
+    return jwt.sign({
+        _id: payload._id,
+        username: payload.username,
+        email: payload.email,
+        role: payload.role,
+
+    }, APP_X_KEY, { expiresIn: '30min' })
 };
 
 
