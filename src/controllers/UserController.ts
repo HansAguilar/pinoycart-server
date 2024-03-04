@@ -4,37 +4,30 @@ import { ItemModel, OrderModel, UserModel, VendorModel } from "../models";
 import { GenerateHashPassword, GenerateSalt, GenerateSignToken, ValidatePassword, isValidObjectId, verifyToken } from "../utility";
 import { IFollowVendorID } from "../dto/Vendor.dto";
 import { HttpStatusCodes } from "../utility";
-import jwt from "jsonwebtoken";
-import { APP_X_KEY } from "../config";
-import { AuthPayload } from "../dto/Auth.dto";
 
 //* REGISTER USER
 export const CreateUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { username, password, email, phone } = <ICreateUser>req.body;
+    const { username, password } = <ICreateUser>req.body;
 
     try {
-        const existingUser = await UserModel.findOne({ $or: [{ email: email }, { phone: phone }] });
-        //^ if user already exists
-        if (existingUser) {
-            return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, email or phone number already exists" });
+        const isUsernameAvailable = await UserModel.findOne({ username: username });
+
+        if (isUsernameAvailable) {
+            return res.status(HttpStatusCodes.Conflict).json({ message: 'Username is already taken.' });
         }
 
-        //^ hash the password
-        const salt = await GenerateSalt();
-        const hashPassword = await GenerateHashPassword(password, salt);
+        else {
+            //^ hash the password
+            const salt = await GenerateSalt();
+            const hashPassword = await GenerateHashPassword(password, salt);
+            await UserModel.create({ username: username, password: hashPassword });
+        }
 
-        await UserModel.create({
-            username: username,
-            password: hashPassword,
-            email: email,
-            phone: phone,
-            orders: [],
-            vendorInfo: null
-        });
-
-        res.status(HttpStatusCodes.Created).json({ message: "Account Created Successfully!" });
+        return res.status(HttpStatusCodes.Created).json({ message: "Account Created Successfully!" });
     }
+
     catch (error) {
+        console.log(error);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
@@ -44,7 +37,7 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
 
 //* EDIT USER
 export const EditUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { email, phone } = <IUserEditInput>req.body;
+    const { username } = <IUserEditInput>req.body;
     const user = req.user;
 
     try {
@@ -54,16 +47,13 @@ export const EditUser = async (req: Request, res: Response, next: NextFunction) 
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }
 
-        const existingUser = await UserModel.findOne({ $or: [{ email: email }, { phone: phone }] });
+        const existingUser = await UserModel.findOne({ username: username });
+
         if (existingUser) {
-            return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, email or phone number already exists" });
+            return res.status(HttpStatusCodes.Conflict).json({ message: "Username already exists" });
         }
 
-        userExist.email = email;
-        userExist.phone = phone;
-
         await userExist.save();
-
         return res.status(HttpStatusCodes.OK).json({ message: "User Account Updated!" });
     }
     catch (error) {
@@ -82,6 +72,10 @@ export const GetAllUser = async (req: Request, res: Response, next: NextFunction
             return res.status(HttpStatusCodes.NoContent).end(); // Return 204 with no response body
         }
 
+        // const a = req.headers.cookie;
+        const a = req.cookies.id
+        console.log(a);
+        
         return res.status(HttpStatusCodes.OK).json({ data: users });
     }
     catch (error) {
@@ -134,11 +128,14 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
         if (isPasswordValid) {
             const token = GenerateSignToken(user);
 
-            res.cookie("token", token, {
-                httpOnly: true,
-                maxAge: 9960000
-            })
+            // res.cookie("token", token, {
+            //     httpOnly: true,
+            //     maxAge: 9960000
+            // })
 
+            //! set a cookie
+            res.cookie("id", user._id) 
+            
             const userData = await UserModel.findOne({ _id: user._id }, '-__v -createdAt -updatedAt -password');
             return res.status(HttpStatusCodes.OK).json({ message: "Login Successfull", token: token, data: userData });
         }
@@ -149,7 +146,7 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
     }
     catch (error) {
         console.log(error);
-        
+
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
@@ -207,7 +204,6 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
 
 
 //* ADD ORDER 
-//! TODO: 
 export const AddOrder = async (req: Request, res: Response, next: NextFunction) => {
     const { items } = <IUserOrder>req.body;
 
@@ -281,7 +277,6 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
 
 
 //* UPDATE ORDER BY ID
-//! TODO: UPDATE ORDER BY ID
 export const UpdateOrder = async (req: Request, res: Response, next: NextFunction) => {
     const orderID = req.params.orderID;
     const { items } = <IUserOrder>req.body;

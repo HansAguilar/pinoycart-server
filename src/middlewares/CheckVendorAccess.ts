@@ -13,6 +13,8 @@ export const CheckVendorAccess = async (req: Request, res: Response, next: NextF
         }
     }
     catch (error) {
+        console.log("check vendor access file:::", error);
+        
         res.status(HttpStatusCodes.Forbidden).json({ message: "You are not authorized!" });
     }
 }

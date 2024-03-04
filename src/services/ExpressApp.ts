@@ -1,6 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import { ItemRoutes, UserRoutes, VendorRoutes, PaymentRoutes } from "../routes";
+import cookieParser from 'cookie-parser';
 
 export default async (app: Application) => {
     app.use(cors({
@@ -8,6 +9,7 @@ export default async (app: Application) => {
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         origin: 'http://localhost:5173',
     })); //! this solves the cors problem in frontend
+    app.use(cookieParser());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 

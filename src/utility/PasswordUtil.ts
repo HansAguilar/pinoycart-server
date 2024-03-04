@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { Request, Response, NextFunction } from "express";
+import { Request } from "express";
 
 
 import { IUserPayload } from "../dto/User.dto";
@@ -26,7 +26,6 @@ export const GenerateSignToken = (payload: IUserPayload) => {
     return jwt.sign({
         _id: payload._id,
         username: payload.username,
-        email: payload.email,
         role: payload.role,
 
     }, APP_X_KEY, { expiresIn: '30min' })
@@ -36,19 +35,21 @@ export const GenerateSignToken = (payload: IUserPayload) => {
 export const ValidateSignToken = (req: Request) => {
     const token = req.get("Authorization");
 
-    //^ if token exists
     if (token) {
         const payload = jwt.verify(token.split(' ')[1], APP_X_KEY) as AuthPayload;
         req.user = payload;
         return true;
     }
-    //^ else
-    return false;
+    else {
+        return false;
+    }
 };
 
 export const verifyToken = (token: string) => {
     if (token) {
         return jwt.verify(token, APP_X_KEY) as AuthPayload;
     }
-    return false;
+    else {
+        return false;
+    }
 };

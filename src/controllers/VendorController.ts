@@ -7,16 +7,18 @@ import { HttpStatusCodes } from "../utility";
 //^ CREATE VENDOR
 export const CreateVendor = async (req: Request, res: Response, next: NextFunction) => {
     const { vendorName, vendorDesc } = req.body;
-    console.log(req.body);
-    const user = req.user;
-    console.log(req.file);
+    
+    //! get id from cookie session (nagmula to sa login kaya avail across routes)
+    const userID = req.cookies.id;
+
+    console.log("userID vendor route:::", userID);
+    
 
     try {
-
-        const getUser = await UserModel.findById(user?._id);
+        const getUser = await UserModel.findById(userID);
         const isExistingVendor = await VendorModel.findOne({ vendorName: vendorName });
-
-        if (getUser?.vendorInfo !== null) {
+        
+        if (getUser.role === "vendor") {
             return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, you already have a shop" });
         }
 
@@ -47,8 +49,7 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
         return res.status(HttpStatusCodes.NoContent).end();
     }
     catch (error) {
-        console.log(error);
-
+        console.log(error.message);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
@@ -76,6 +77,7 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
         }
     }
     catch (error) {
+        console.log(error);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
