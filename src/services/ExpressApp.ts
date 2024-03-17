@@ -7,7 +7,7 @@ export default async (app: Application) => {
     app.use(cors({
         credentials: true,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-        origin: 'http://localhost:5173',
+        origin: '*',
     })); //! this solves the cors problem in frontend
     app.use(cookieParser());
     app.use(express.json());

@@ -1,5 +1,5 @@
 import express from "express";
-import { AddOrder, AddToCart, ClearCart, CreateUser, DeleteCartItemByID, EditUser, FollowVendor, GetAllUser, GetCart, GetUserById, Login, UpdateOrder, VerifyUserToken } from "../controllers";
+import { AddOrder, AddToCart, ClearCart, CreateUser, DeleteCartItemByID, EditUser, FollowVendor, GetAllUser, GetCart, GetUserById, Login, MinusToCart, UpdateOrder, VerifyUserToken } from "../controllers";
 import { Authenticate } from "../middlewares";
 
 const router = express.Router();
@@ -15,7 +15,8 @@ router.put("/edit-user", EditUser);
 router.post("/follow-vendor", FollowVendor);
 
 router.post("/add-cart", AddToCart);
-router.get("/get-cart", GetCart);
+router.post("/minus-cart", MinusToCart);
+router.post("/get-cart", GetCart);
 router.post("/remove-cart", DeleteCartItemByID);
 router.delete("/clear-cart", ClearCart);
 

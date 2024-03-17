@@ -24,7 +24,7 @@ const images = multer({ storage: imageStorage }).array("images", 5);
 router.get("/get-items", GetAllItems);
 router.get("/get-item/:itemID", GetItemByID);
 
-router.use(Authenticate);
+// router.use(Authenticate);
 
 router.post("/add-item", images, AddItem);
 router.patch("/update-item", images, UpdateItemByID);

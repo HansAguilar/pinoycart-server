@@ -33,8 +33,6 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
 };
 
 
-
-
 //* EDIT USER
 export const EditUser = async (req: Request, res: Response, next: NextFunction) => {
     const { username } = <IUserEditInput>req.body;
@@ -54,13 +52,12 @@ export const EditUser = async (req: Request, res: Response, next: NextFunction) 
         }
 
         await userExist.save();
-        return res.status(HttpStatusCodes.OK).json({ message: "User Account Updated!" });
+        return res.status(HttpStatusCodes.OK).json({ message: "Username successfully updated!" });
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 //* GET ALL USERS
@@ -75,14 +72,13 @@ export const GetAllUser = async (req: Request, res: Response, next: NextFunction
         // const a = req.headers.cookie;
         const a = req.cookies.id
         console.log(a);
-        
+
         return res.status(HttpStatusCodes.OK).json({ data: users });
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 //* GET USER BY ID
@@ -114,7 +110,7 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
 
 //* LOGIN 
 export const Login = async (req: Request, res: Response, next: NextFunction) => {
-    const { username, password } = <IUserLoginInput>req.body;
+    const { username, password, localCart } = <IUserLoginInput>req.body;
 
     try {
         const user = await UserModel.findOne({ username: username });
@@ -134,8 +130,34 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
             // })
 
             //! set a cookie
-            res.cookie("id", user._id) 
-            
+            res.cookie("id", user._id)
+
+            if (localCart) {
+                for (let item of localCart) {
+                    let getItem = await ItemModel.findOne({ _id: item._id }, '-__v -createdAt -updatedAt -itemReviews');
+
+                    // Find the index of the item in the user's cart
+                    if (getItem) {
+                        const cartIndex = user.cart.findIndex((cartItem) => {
+                            return cartItem.itemID === item._id
+                        });
+
+                        if (cartIndex !== -1) {
+                            // Item is already in the cart, increment the quantity
+                            user.cart[cartIndex].itemQuantity += item.itemStock;
+                        }
+                        else {
+                            // Item is not in the cart, add it
+                            user.cart.push({
+                                itemID: item._id,
+                                itemQuantity: item.itemStock,
+                            });
+                        }
+                    }
+                }
+                await user.save();
+            }
+
             const userData = await UserModel.findOne({ _id: user._id }, '-__v -createdAt -updatedAt -password');
             return res.status(HttpStatusCodes.OK).json({ message: "Login Successfull", token: token, data: userData });
         }
@@ -146,7 +168,6 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
     }
     catch (error) {
         console.log(error);
-
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
@@ -293,18 +314,18 @@ export const UpdateOrder = async (req: Request, res: Response, next: NextFunctio
 
 //* ADD TO CART 
 export const AddToCart = async (req: Request, res: Response, next: NextFunction) => {
-    const { items } = <ICart>req.body;
+    const { items, userID } = <ICart>req.body;
 
     try {
-        const getUser = await UserModel.findById(req.user?._id);
+        const getUser = await UserModel.findById(userID);
 
         if (!getUser) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }
 
-        if (getUser.role === "vendor") {
-            return res.status(HttpStatusCodes.Forbidden).json({ message: "Vendors cannot add items to the cart!" });
-        }
+        // if (getUser.role === "vendor") {
+        //     return res.status(HttpStatusCodes.Forbidden).json({ message: "Vendors cannot add items to the cart!" });
+        // }
 
         for (let item of items) {
             let getItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -updatedAt -itemReviews');
@@ -338,18 +359,59 @@ export const AddToCart = async (req: Request, res: Response, next: NextFunction)
 }
 
 
+//* MINUS TO CART 
+export const MinusToCart = async (req: Request, res: Response, next: NextFunction) => {
+    const { items, userID } = <ICart>req.body;
+
+    try {
+        const getUser = await UserModel.findById(userID);
+
+        if (!getUser) {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
+        }
+
+        for (let item of items) {
+            let getItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -updatedAt -itemReviews');
+
+            if (!getItem) {
+                return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
+            }
+
+            // Find the index of the item in the user's cart
+            const cartIndex = getUser.cart.findIndex((cartItem) => cartItem.itemID === item.itemID);
+
+            if (cartIndex !== -1) {
+                // Decrement the item quantity
+                getUser.cart[cartIndex].itemQuantity -= item.itemQuantity;
+
+                // If the quantity becomes zero or negative, remove the item from the cart
+                if (getUser.cart[cartIndex].itemQuantity <= 0) {
+                    getUser.cart.splice(cartIndex, 1);
+                }
+            }
+        }
+
+        await getUser.save();
+        return res.status(HttpStatusCodes.Created).json({ message: "Removed from cart!" })
+    }
+    catch (error) {
+        console.log(error)
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
+}
+
 
 //* GET USER CART 
 export const GetCart = async (req: Request, res: Response, next: NextFunction) => {
+    const { userID } = req.body
     try {
-        const getUser = await UserModel.findById(req.user?._id).select("cart");
+        const getUser = await UserModel.findById(userID).select("cart");
         if (!getUser || getUser.cart.length <= 0) return res.status(HttpStatusCodes.OK).json({ message: "No item in your cart!", data: [] });
 
         let cartItems = [];
 
         for (const item of getUser.cart) {
             const cartItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -itemReviews -updateAt');
-            console.log(item.itemQuantity);
 
             if (cartItem) {
                 cartItem.itemStock = item.itemQuantity
@@ -368,22 +430,24 @@ export const GetCart = async (req: Request, res: Response, next: NextFunction) =
 
 
 
-//* REMOVE USER CART ITEM 
+//* REMOVE CART ITEM 
 export const DeleteCartItemByID = async (req: Request, res: Response, next: NextFunction) => {
-    const getItemID = req.body.cartID;
+    const { cartID, userID } = req.body;
+    console.log("remove: ", cartID)
     try {
-        const getItem = ItemModel.findOne({ _id: getItemID });
+        const getItem = await ItemModel.findOne({ _id: cartID });
+        console.log("data ", getItem)
 
         if (!getItem) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
 
-        const getUser = await UserModel.findById(req.user?._id);
+        const getUser = await UserModel.findById(userID);
 
         if (!getUser) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }
 
         // Find the index of the item in the user's cart
-        const cartIndex = getUser.cart.findIndex((cartItem) => cartItem.itemID === getItemID);
+        const cartIndex = getUser.cart.findIndex((cartItem) => cartItem.itemID === cartID);
 
         if (cartIndex !== -1) {
             // Remove the item and its quantity from the cart arrays

@@ -4,9 +4,9 @@ import { HandlePayment } from "../controllers";
 
 const router = express.Router();
 
-router.use(Authenticate);
+// router.use(Authenticate);
 
-router.post("/create-payment-intent", HandlePayment);
+router.post("/create-checkout-session", HandlePayment);
 
 
 export { router as PaymentRoutes }

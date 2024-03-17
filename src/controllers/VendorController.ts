@@ -6,13 +6,10 @@ import { HttpStatusCodes } from "../utility";
 
 //^ CREATE VENDOR
 export const CreateVendor = async (req: Request, res: Response, next: NextFunction) => {
-    const { vendorName, vendorDesc } = req.body;
+    const { vendorName, vendorDesc, userID } = req.body;
     
     //! get id from cookie session (nagmula to sa login kaya avail across routes)
-    const userID = req.cookies.id;
-
-    console.log("userID vendor route:::", userID);
-    
+    // const userID = req.cookies.id;
 
     try {
         const getUser = await UserModel.findById(userID);
@@ -61,7 +58,6 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
     try {
         const user = req.user?._id;
         const { vendorName, vendorDesc } = <ICreateVendor>req.body;
-        console.log(req.body);
 
         const existingVendor = await VendorModel.findOne({ userID: user });
 

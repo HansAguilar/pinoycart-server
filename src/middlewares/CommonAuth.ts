@@ -15,11 +15,11 @@ export const Authenticate = (req: Request, res: Response, next: NextFunction) =>
     try {
         const validate = ValidateSignToken(req);
 
-        if (validate) {
-            next();
+        if (true) {
+            return next();
         }
         else {
-            res.status(403).json({ message: "You are not authorized!" });
+            return res.status(403).json({ message: "You are not authorized! a" });
         }
     } catch (error) {
         res.status(500).json({ message: "You are not authorized!" });

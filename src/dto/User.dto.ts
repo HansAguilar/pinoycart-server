@@ -6,7 +6,8 @@ export interface ICreateUser {
 
 export interface IUserLoginInput {
     username: string;
-    password: string
+    password: string;
+    localCart: any[]
 };
 
 export interface IUserEditInput {
@@ -38,7 +39,10 @@ export interface ICart {
     items: [
         {
             itemID: string;
-            itemQuantity: number
+            itemQuantity: number;
+            _id?: string;
+            itemPrice?: number;
         }
-    ]
+    ],
+    userID?: string;
 };

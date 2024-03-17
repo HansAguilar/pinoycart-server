@@ -5,11 +5,10 @@ import { IAddItem, IReview } from "../dto/Items.dto";
 
 //^ ADD ITEM
 export const AddItem = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemName, itemDesc, itemCategory, itemPrice, itemStock } = <IAddItem>req.body;
-    const user = req.user;
+    const { itemName, itemDesc, itemCategory, itemPrice, itemStock, userID } = <IAddItem>req.body;
 
     try {
-        const getVendor = await VendorModel.findOne({ userID: user?._id });
+        const getVendor = await VendorModel.findOne({ userID: userID });
 
         if (getVendor) {
             const files = req.files as [Express.Multer.File];
