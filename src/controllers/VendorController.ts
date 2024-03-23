@@ -7,14 +7,14 @@ import { HttpStatusCodes } from "../utility";
 //^ CREATE VENDOR
 export const CreateVendor = async (req: Request, res: Response, next: NextFunction) => {
     const { vendorName, vendorDesc, userID } = req.body;
-    
+
     //! get id from cookie session (nagmula to sa login kaya avail across routes)
     // const userID = req.cookies.id;
 
     try {
         const getUser = await UserModel.findById(userID);
         const isExistingVendor = await VendorModel.findOne({ vendorName: vendorName });
-        
+
         if (getUser.role === "vendor") {
             return res.status(HttpStatusCodes.BadRequest).json({ message: "Sorry, you already have a shop" });
         }
@@ -56,10 +56,10 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
 //^ UPDATE VENDOR INFO
 export const UpdateVendor = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const user = req.user?._id;
-        const { vendorName, vendorDesc } = <ICreateVendor>req.body;
+        const { vendorID, vendorName, vendorDesc } = <ICreateVendor>req.body;
+        console.log(req.body)
 
-        const existingVendor = await VendorModel.findOne({ userID: user });
+        const existingVendor = await VendorModel.findOne({ _id: vendorID });
 
         if (existingVendor) {
             existingVendor.vendorName = vendorName;
@@ -83,13 +83,12 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
 //^ UPDATE VENDOR BANNER
 export const UpdateVendorBanner = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const user = req.user?._id;
-        const existingVendor = await VendorModel.findOne({ userID: user });
+        const { vendorID } = req.body;
+        console.log(vendorID)
+        const existingVendor = await VendorModel.findOne({ _id: vendorID });
 
         if (existingVendor) {
             const file = req.file;
-            console.log(req.file);
-
 
             if (file) {
                 existingVendor.vendorBanner = file!.filename;

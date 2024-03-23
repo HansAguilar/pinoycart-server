@@ -1,6 +1,7 @@
 export interface ICreateVendor{
     vendorName: string;
     vendorDesc: string;
+    vendorID?: string;
     file: string
 }
 

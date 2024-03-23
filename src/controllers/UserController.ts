@@ -35,29 +35,33 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
 
 //* EDIT USER
 export const EditUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { username } = <IUserEditInput>req.body;
-    const user = req.user;
+    const { userID, username } = <{ userID: string, username: string }>req.body;
+    console.log(username)
 
     try {
-        const userExist = await UserModel.findById(user?._id);
+        // Validate user authorization
+        const existingUser = await UserModel.findById(userID);
 
-        if (!userExist) {
-            return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
+        if (!existingUser) {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "User not found" });
         }
 
-        const existingUser = await UserModel.findOne({ username: username });
-
-        if (existingUser) {
-            return res.status(HttpStatusCodes.Conflict).json({ message: "Username already exists" });
+        // Ensure the user making the request is authorized to modify the specified account
+        if (existingUser._id.toString() !== userID) {
+            return res.status(HttpStatusCodes.Forbidden).json({ message: "You are not authorized to perform this action" });
         }
 
-        await userExist.save();
-        return res.status(HttpStatusCodes.OK).json({ message: "Username successfully updated!" });
+        existingUser.username = username;
+        await existingUser.save();
+
+        return res.status(HttpStatusCodes.OK).json({ message: "Username successfully updated!", data: existingUser });
     }
     catch (error) {
+        console.log(error)
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
+
 
 
 //* GET ALL USERS
@@ -501,10 +505,41 @@ export const VerifyUserToken = async (req: Request, res: Response, next: NextFun
         const payload = verifyToken(token);
         if (payload) {
             const user = await UserModel.findOne({ _id: payload._id }, '-__v -createdAt -updatedAt -password');
+            console.log(user)
             return res.status(HttpStatusCodes.OK).json({ data: user });
         }
         else {
             return res.status(HttpStatusCodes.Unauthorized).json({ message: token });
+        }
+    }
+    catch (error) {
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+    }
+}
+
+
+
+//* CHANGE PASSWORD
+export const ChangePassword = async (req: Request, res: Response, next: NextFunction) => {
+    const { userID, password } = req.body;
+    try {
+        if (!password) {
+            return res.status(HttpStatusCodes.BadRequest).json({ message: "Please input all fields" });
+        }
+
+        const user = await UserModel.findById(userID);
+
+        if (user) {
+            const isCorrect = ValidatePassword(password, user.password);
+
+            if (isCorrect) {
+                //^ hash the password
+                const salt = await GenerateSalt();
+                const hashPassword = await GenerateHashPassword(password, salt);
+                await UserModel.updateOne({ password: hashPassword });
+            }
+            await user.save();
+            return res.status(HttpStatusCodes.OK).json({ message: "Password updated successfully" })
         }
     }
     catch (error) {
