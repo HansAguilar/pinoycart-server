@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ItemModel, UserModel, VendorModel } from "../models";
-import { HttpStatusCodes, isValidObjectId } from "../utility";
+import { HttpStatusCodes, applyRandomDiscount, isValidObjectId } from "../utility";
 import { IAddItem, IReview } from "../dto/Items.dto";
 
 //^ ADD ITEM
@@ -14,17 +14,18 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
             const files = req.files as [Express.Multer.File];
             const images = files.map((file: Express.Multer.File) => file.filename);
 
+            const discountedPrice = applyRandomDiscount(Number(itemPrice));
+
             const itemCreated = await ItemModel.create({
                 vendorID: getVendor._id,
                 itemName: itemName,
                 itemDesc: itemDesc,
                 itemCategory: itemCategory,
-                itemPrice: itemPrice,
+                itemPrice: discountedPrice,
                 itemStock: itemStock,
                 itemImages: images,
                 itemRatings: 0,
             });
-
             getVendor.vendorItems.push(itemCreated._id);
 
             await Promise.all([itemCreated.save(), getVendor.save()]);
