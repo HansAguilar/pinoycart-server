@@ -3,20 +3,16 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 //^ parang type safety ba, para magtugma dun sa schema
 interface OrderDoc extends Document {
-    customerID: string,
-    items: [{
-        itemID: string,
-        itemQuantity: number,
+    customerID: string;
+    items: {
+        itemID: string;
+        itemQuantity: number;
         itemPrice: number
-    }],
-    totalAmount: number,
-    orderStatus: string,
-    orderDate: string,
-    deliveryAddress: {
-        city: string,
-        street: string,
-        postal: string
-    }
+    }[];
+    session_id: string
+    address: string;
+    totalAmount: number;
+    orderStatus: string;
 };
 
 //^ tas ito yung parang table sa SQL :)
@@ -28,16 +24,12 @@ const OrderSchema = new Schema(
                 itemID: { type: mongoose.Schema.Types.ObjectId, ref: 'items', required: true },
                 quantity: { type: Number, required: true },
                 price: { type: Number, required: true },
-                deliveryAddress: {
-                    city: { type: String },
-                    street: { type: String },
-                    postal: { type: String }
-                },
             }
         ],
+        session_id: { type: String, required: true, unique: true },
+        address: { type: String, required: true },
         totalAmount: { type: Number, required: true },
         orderStatus: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered'], default: 'pending' },
-        orderDate: { type: Date, default: Date.now },
     },
     {
         timestamps: true

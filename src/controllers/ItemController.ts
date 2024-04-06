@@ -14,14 +14,12 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
             const files = req.files as [Express.Multer.File];
             const images = files.map((file: Express.Multer.File) => file.filename);
 
-            const discountedPrice = applyRandomDiscount(Number(itemPrice));
-
             const itemCreated = await ItemModel.create({
                 vendorID: getVendor._id,
                 itemName: itemName,
                 itemDesc: itemDesc,
                 itemCategory: itemCategory,
-                itemPrice: discountedPrice,
+                itemPrice: itemPrice,
                 itemStock: itemStock,
                 itemImages: images,
                 itemRatings: 0,
