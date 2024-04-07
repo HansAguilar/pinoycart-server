@@ -3,7 +3,7 @@ export interface IAddItem {
     itemName: string;
     itemDesc: string;
     itemPrice: number;
-    itemCategory: string[];
+    itemCategory: string;
     itemStock: number;
     itemImages: string[];
     userID?: string

@@ -26,7 +26,7 @@ const OrderSchema = new Schema(
                 price: { type: Number, required: true },
             }
         ],
-        session_id: { type: String, required: true, unique: true },
+        session_id: { type: String, required: true },
         address: { type: String, required: true },
         totalAmount: { type: Number, required: true },
         orderStatus: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered'], default: 'pending' },
