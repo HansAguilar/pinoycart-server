@@ -115,7 +115,10 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
 //* LOGIN 
 export const Login = async (req: Request, res: Response, next: NextFunction) => {
     const { username, password, localCart } = <IUserLoginInput>req.body;
+    let i = 0;
 
+    console.log(i)
+    i++;
     try {
         const user = await UserModel.findOne({ username: username });
 
@@ -300,7 +303,6 @@ export const AddOrder = async (req: Request, res: Response, next: NextFunction) 
 };
 
 
-
 //* UPDATE ORDER BY ID
 export const UpdateOrder = async (req: Request, res: Response, next: NextFunction) => {
     const orderID = req.params.orderID;
@@ -471,7 +473,6 @@ export const DeleteCartItemByID = async (req: Request, res: Response, next: Next
 
 
 
-
 //* CLEAR USER CART 
 export const ClearCart = async (req: Request, res: Response, next: NextFunction) => {
     const getItemID = req.body.cartID;
@@ -516,7 +517,6 @@ export const VerifyUserToken = async (req: Request, res: Response, next: NextFun
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 }
-
 
 
 //* CHANGE PASSWORD

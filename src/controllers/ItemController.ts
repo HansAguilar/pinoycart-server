@@ -164,18 +164,17 @@ export const DeleteItemByID = async (req: Request, res: Response, next: NextFunc
 //! DITO TAYO NAGTAPOS
 //^ ADD REVIEWS
 export const AddReview = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemID, rating, comment } = <IReview>req.body;
+    const { userID, itemID, rating, comment } = <IReview>req.body;
     try {
-        if (req.user?.role === "vendor") return res.status(HttpStatusCodes.Unauthorized).json({ message: "Vendor cannot add a review" });
-
         const item = await ItemModel.findById(itemID);
 
         if (!item) {
             return res.status(HttpStatusCodes.NotFound).json({ message: 'Item not found' });
         }
 
+
         item.itemReviews.push({
-            userID: req.user?._id,
+            userID: userID,
             rating,
             comment,
         });

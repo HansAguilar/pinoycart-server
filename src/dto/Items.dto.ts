@@ -11,6 +11,7 @@ export interface IAddItem {
 
 
 export interface IReview {
+    userID: string;
     itemID: string;
     rating: number;
     comment: string;

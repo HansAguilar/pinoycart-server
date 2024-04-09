@@ -1,26 +1,25 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-//^ parang type safety ba, para magtugma dun sa schema
+interface Review {
+    userID: mongoose.Schema.Types.ObjectId | string;
+    rating: number;
+    comment: string;
+}
+
 interface ItemDoc extends Document {
-    vendorID: string;
+    vendorID: mongoose.Schema.Types.ObjectId;
     itemName: string;
     itemDesc: string;
     itemPrice: number;
-    itemCategory: string;
     itemStock: number;
+    itemCategory: string;
     itemImages: string[];
     itemLikes: number;
     itemRatings: number;
-    itemReviews: [
-        {
-            userID: string;
-            rating: number;
-            comment: string;
-        }
-    ],
-};
+    itemReviews: Review[];
+}
 
-const ItemSchema = new Schema(
+const ItemSchema = new Schema<ItemDoc>(
     {
         vendorID: { type: mongoose.Schema.Types.ObjectId, ref: 'vendors' },
         itemName: { type: String },
@@ -28,9 +27,9 @@ const ItemSchema = new Schema(
         itemPrice: { type: Number },
         itemStock: { type: Number },
         itemCategory: { type: String },
-        itemImages: { type: [String], },
-        itemLikes: { type: Number },
-        itemRatings: { type: Number },
+        itemImages: { type: [String] },
+        itemLikes: { type: Number, default: 0 },
+        itemRatings: { type: Number, default: 0 },
         itemReviews: [{
             userID: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
             rating: { type: Number },
@@ -44,4 +43,4 @@ const ItemSchema = new Schema(
 
 const ItemModel = mongoose.model<ItemDoc>("items", ItemSchema);
 
-export { ItemModel };
+export { ItemModel, ItemDoc };
