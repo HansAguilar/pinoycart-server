@@ -111,16 +111,19 @@ export const GetItemByID = async (req: Request, res: Response, next: NextFunctio
     try {
         if (!isValidObjectId(itemID)) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
 
-        const getItem = await ItemModel.findOne({ _id: itemID }, '-__v');
-        return res.status(HttpStatusCodes.OK).json({ getItem });
+        const getItem = await ItemModel.findOne({ _id: itemID }, '-__v')
+
+        if (!getItem) {
+            return res.status(HttpStatusCodes.NotFound).json({ message: 'Item not found' });
+        }
+
+        return res.status(HttpStatusCodes.OK).json(getItem);
     }
     catch (error) {
         console.log(error);
-
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 
@@ -164,7 +167,7 @@ export const DeleteItemByID = async (req: Request, res: Response, next: NextFunc
 //! DITO TAYO NAGTAPOS
 //^ ADD REVIEWS
 export const AddReview = async (req: Request, res: Response, next: NextFunction) => {
-    const { userID, itemID, rating, comment } = <IReview>req.body;
+    const { userID, username, itemID, rating, comment } = <IReview>req.body;
     try {
         const item = await ItemModel.findById(itemID);
 
@@ -172,9 +175,9 @@ export const AddReview = async (req: Request, res: Response, next: NextFunction)
             return res.status(HttpStatusCodes.NotFound).json({ message: 'Item not found' });
         }
 
-
         item.itemReviews.push({
             userID: userID,
+            username,
             rating,
             comment,
         });
