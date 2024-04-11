@@ -5,7 +5,7 @@ interface Reviews extends Document {
     itemID: mongoose.Schema.Types.ObjectId | string;
     rating: number;
     likes?: number;
-    isLiked?: boolean;
+    whoLikes: string[];
     comment: string;
     date?: Date;
 }
@@ -16,7 +16,7 @@ const ReviewSchema = new Schema<Reviews>(
         itemID: { type: mongoose.Schema.Types.ObjectId, ref: 'items', required: true }, // Reference the User model
         rating: { type: Number, required: true },
         likes: { type: Number, default: 0 },
-        isLiked: { type: Boolean, default: false },
+        whoLikes: [{ type: String }],
         comment: { type: String, required: true },
         date: { type: Date, default: Date.now },
     },

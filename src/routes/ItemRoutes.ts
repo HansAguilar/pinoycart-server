@@ -1,6 +1,6 @@
 import express from "express";
 import { Authenticate } from "../middlewares";
-import { AddItem, AddReview, DeleteItemByID, GetAllItems, GetItemByID, UpdateItemByID } from "../controllers";
+import { AddItem, AddReview, DeleteItemByID, GetAllItems, GetItemByID, LikeReviews, UpdateItemByID } from "../controllers";
 import multer from "multer";
 
 const router = express.Router();
@@ -30,6 +30,7 @@ router.post("/add-item", images, AddItem);
 router.patch("/update-item", images, UpdateItemByID);
 router.post("/delete-item", DeleteItemByID);
 router.post("/add-review", AddReview);
+router.post("/like-review", LikeReviews);
 
 
 export { router as ItemRoutes }

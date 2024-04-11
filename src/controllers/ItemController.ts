@@ -181,13 +181,10 @@ export const DeleteItemByID = async (req: Request, res: Response, next: NextFunc
 
 
 
-//! DITO TAYO NAGTAPOS
 //^ ADD REVIEWS
 export const AddReview = async (req: Request, res: Response, next: NextFunction) => {
     const { userID, itemID, rating, comment } = <IAddReview>req.body.data;
 
-    console.log("first review", userID, itemID, rating, comment)
-    console.log(req.body)
     try {
         if (userID && itemID && rating && comment) {
             const review = await ReviewModel.create({ userID, itemID, rating, comment });
@@ -197,12 +194,55 @@ export const AddReview = async (req: Request, res: Response, next: NextFunction)
                 item.itemReviews.push(review.id);
                 await item.save();
             }
+
+            return res.status(HttpStatusCodes.Created).json({ data: item, message: 'Review added successfully' });
         }
-        return res.status(HttpStatusCodes.Created).json({ message: 'Review added successfully' });
+
+        else {
+            return res.status(HttpStatusCodes.Created).json({ message: 'Fill up all fields' });
+        }
     }
     catch (error) {
         console.error(error);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: 'Internal Server Error' });
     }
 };
+
+
+
+//^ LIKE REVIEWS
+export const LikeReviews = async (req: Request, res: Response, next: NextFunction) => {
+    const { reviewID, userID } = req.body;
+
+    try {
+        if (reviewID) {
+            const review = await ReviewModel.findById(reviewID);
+
+            if (!review) {
+                return res.status(404).json({ message: 'Review not found' });
+            }
+
+            if (!review.whoLikes.includes(userID)) {
+                review.whoLikes.push(userID);
+                review.likes += 1;
+            }
+            else {
+                // Remove user from the list of likes if already present
+                review.whoLikes = review.whoLikes.filter((id: string) => id !== userID);
+                review.likes -= 1;
+            }
+
+            await review.save(); // Save the updated review
+
+            return res.status(HttpStatusCodes.Created).json({ message: "Liked/Unliked review" }); // Status code 201 for successful like/unlike
+        }
+        else {
+            return res.status(HttpStatusCodes.BadRequest).json({ message: 'Missing reviewID in request body' });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: 'Internal Server Error' });
+    }
+};
+
 
