@@ -10,11 +10,9 @@ export interface IAddItem {
 };
 
 
-export interface IReview {
+export interface IAddReview {
     userID: string;
-    username: string;
     itemID: string;
-    likes?: number;
     rating: number;
     comment: string;
 }

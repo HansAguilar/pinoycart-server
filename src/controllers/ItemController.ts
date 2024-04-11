@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { ItemModel, UserModel, VendorModel } from "../models";
+import { ItemModel, ReviewModel, UserModel, VendorModel } from "../models";
 import { HttpStatusCodes, applyRandomDiscount, isValidObjectId } from "../utility";
-import { IAddItem, IReview } from "../dto/Items.dto";
+import { IAddItem, IAddReview } from "../dto/Items.dto";
 
 //^ ADD ITEM
 export const AddItem = async (req: Request, res: Response, next: NextFunction) => {
@@ -108,22 +108,39 @@ export const GetAllItems = async (req: Request, res: Response, next: NextFunctio
 //^ FETCH ITEM BY ID
 export const GetItemByID = async (req: Request, res: Response, next: NextFunction) => {
     const itemID = req.params.itemID;
-    try {
-        if (!isValidObjectId(itemID)) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
 
-        const getItem = await ItemModel.findOne({ _id: itemID }, '-__v')
+    try {
+        if (!isValidObjectId(itemID)) {
+            return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
+        }
+
+        const getItem = await ItemModel.findOne({ _id: itemID }, '-__v -createdAt -updatedAt')
+            .populate({
+                path: 'itemReviews',
+                select: '-__v -updatedAt -createdAt', // Exclude __v, updatedAt, and createdAt fields
+                populate: {
+                    path: 'userID',
+                    model: 'users',
+                    select: 'username' // Include only the username field
+                }
+            });
 
         if (!getItem) {
             return res.status(HttpStatusCodes.NotFound).json({ message: 'Item not found' });
         }
 
-        return res.status(HttpStatusCodes.OK).json(getItem);
-    }
-    catch (error) {
-        console.log(error);
+        const item = {
+            ...getItem.toJSON(), // Convert Mongoose document to plain object
+        };
+
+        return res.status(HttpStatusCodes.OK).json(item);
+    } catch (error) {
+        console.error(error);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
+
+
 
 
 
@@ -167,22 +184,20 @@ export const DeleteItemByID = async (req: Request, res: Response, next: NextFunc
 //! DITO TAYO NAGTAPOS
 //^ ADD REVIEWS
 export const AddReview = async (req: Request, res: Response, next: NextFunction) => {
-    const { userID, username, itemID, rating, comment } = <IReview>req.body;
+    const { userID, itemID, rating, comment } = <IAddReview>req.body.data;
+
+    console.log("first review", userID, itemID, rating, comment)
+    console.log(req.body)
     try {
-        const item = await ItemModel.findById(itemID);
+        if (userID && itemID && rating && comment) {
+            const review = await ReviewModel.create({ userID, itemID, rating, comment });
+            const item = await ItemModel.findById(itemID);
 
-        if (!item) {
-            return res.status(HttpStatusCodes.NotFound).json({ message: 'Item not found' });
+            if (review && item) {
+                item.itemReviews.push(review.id);
+                await item.save();
+            }
         }
-
-        item.itemReviews.push({
-            userID: userID,
-            username,
-            rating,
-            comment,
-        });
-
-        await item.save();
         return res.status(HttpStatusCodes.Created).json({ message: 'Review added successfully' });
     }
     catch (error) {
