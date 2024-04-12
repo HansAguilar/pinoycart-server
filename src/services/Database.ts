@@ -3,7 +3,7 @@ import { MONGO_URI } from "../config";
 
 export default async () => {
     try {
-        await mongoose.connect(MONGO_URI);
+        await mongoose.connect(process.env.MONGO_URI);
         console.log("MONGO DB CONNECTED");
     }
     catch (error) {

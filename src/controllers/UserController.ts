@@ -36,7 +36,6 @@ export const CreateUser = async (req: Request, res: Response, next: NextFunction
 //* EDIT USER
 export const EditUser = async (req: Request, res: Response, next: NextFunction) => {
     const { userID, username } = <{ userID: string, username: string }>req.body;
-    console.log(username)
 
     try {
         // Validate user authorization
@@ -63,7 +62,6 @@ export const EditUser = async (req: Request, res: Response, next: NextFunction) 
 };
 
 
-
 //* GET ALL USERS
 export const GetAllUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -72,10 +70,6 @@ export const GetAllUser = async (req: Request, res: Response, next: NextFunction
         if (users.length <= 0) {
             return res.status(HttpStatusCodes.NoContent).end(); // Return 204 with no response body
         }
-
-        // const a = req.headers.cookie;
-        const a = req.cookies.id
-        console.log(a);
 
         return res.status(HttpStatusCodes.OK).json({ data: users });
     }
@@ -87,7 +81,7 @@ export const GetAllUser = async (req: Request, res: Response, next: NextFunction
 
 //* GET USER BY ID
 export const GetUserById = async (req: Request, res: Response, next: NextFunction) => {
-    const userID = req.params.userID;
+    const { userID } = req.body;
 
     try {
         const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(userID);
@@ -97,11 +91,14 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
         }
 
         const getUser = await UserModel.findOne({ _id: userID }, '-password -__v -createdAt -updatedAt').populate("orders", '-__v -createdAt -updatedAt');
-        // await UserModel.findOne({ _id: userID })
 
+
+        console.log(getUser)
         if (!getUser) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
-        } else {
+        }
+
+        else {
             return res.status(HttpStatusCodes.OK).json({ data: getUser });
         }
     }
@@ -111,14 +108,10 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
 };
 
 
-
 //* LOGIN 
 export const Login = async (req: Request, res: Response, next: NextFunction) => {
     const { username, password, localCart } = <IUserLoginInput>req.body;
-    let i = 0;
 
-    console.log(i)
-    i++;
     try {
         const user = await UserModel.findOne({ username: username });
 
@@ -130,14 +123,6 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
 
         if (isPasswordValid) {
             const token = GenerateSignToken(user);
-
-            // res.cookie("token", token, {
-            //     httpOnly: true,
-            //     maxAge: 9960000
-            // })
-
-            //! set a cookie
-            res.cookie("id", user._id)
 
             if (localCart) {
                 for (let item of localCart) {
@@ -178,7 +163,6 @@ export const Login = async (req: Request, res: Response, next: NextFunction) => 
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 //* FOLLOW A VENDOR
@@ -228,7 +212,6 @@ export const FollowVendor = async (req: Request, res: Response, next: NextFuncti
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 //* ADD ORDER 
@@ -328,10 +311,6 @@ export const AddToCart = async (req: Request, res: Response, next: NextFunction)
         if (!getUser) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }
-
-        // if (getUser.role === "vendor") {
-        //     return res.status(HttpStatusCodes.Forbidden).json({ message: "Vendors cannot add items to the cart!" });
-        // }
 
         for (let item of items) {
             let getItem = await ItemModel.findOne({ _id: item.itemID }, '-__v -createdAt -updatedAt -itemReviews');
@@ -435,14 +414,12 @@ export const GetCart = async (req: Request, res: Response, next: NextFunction) =
 };
 
 
-
 //* REMOVE CART ITEM 
 export const DeleteCartItemByID = async (req: Request, res: Response, next: NextFunction) => {
     const { cartID, userID } = req.body;
-    console.log("remove: ", cartID)
+
     try {
         const getItem = await ItemModel.findOne({ _id: cartID });
-        console.log("data ", getItem)
 
         if (!getItem) return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found!" });
 
@@ -463,14 +440,15 @@ export const DeleteCartItemByID = async (req: Request, res: Response, next: Next
             await getUser.save();
 
             return res.status(HttpStatusCodes.OK).json({ message: "Item removed from the cart!" });
-        } else {
+        }
+        else {
             return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found in the user's cart!" });
         }
-    } catch (error) {
+    }
+    catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 //* CLEAR USER CART 
@@ -498,21 +476,21 @@ export const ClearCart = async (req: Request, res: Response, next: NextFunction)
 };
 
 
-
 //* VERIFY USER TOKEN
 export const VerifyUserToken = async (req: Request, res: Response, next: NextFunction) => {
     const { token } = req.body;
+
     try {
         const payload = verifyToken(token);
         if (payload) {
             const user = await UserModel.findOne({ _id: payload._id }, '-__v -createdAt -updatedAt -password');
-            console.log(user)
             return res.status(HttpStatusCodes.OK).json({ data: user });
         }
         else {
             return res.status(HttpStatusCodes.Unauthorized).json({ message: token });
         }
     }
+
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
@@ -522,6 +500,7 @@ export const VerifyUserToken = async (req: Request, res: Response, next: NextFun
 //* CHANGE PASSWORD
 export const ChangePassword = async (req: Request, res: Response, next: NextFunction) => {
     const { userID, password } = req.body;
+
     try {
         if (!password) {
             return res.status(HttpStatusCodes.BadRequest).json({ message: "Please input all fields" });
@@ -542,6 +521,7 @@ export const ChangePassword = async (req: Request, res: Response, next: NextFunc
             return res.status(HttpStatusCodes.OK).json({ message: "Password updated successfully" })
         }
     }
+
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }

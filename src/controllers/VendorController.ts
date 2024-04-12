@@ -8,9 +8,6 @@ import { HttpStatusCodes } from "../utility";
 export const CreateVendor = async (req: Request, res: Response, next: NextFunction) => {
     const { vendorName, vendorDesc, userID } = req.body;
 
-    //! get id from cookie session (nagmula to sa login kaya avail across routes)
-    // const userID = req.cookies.id;
-
     try {
         const getUser = await UserModel.findById(userID);
         const isExistingVendor = await VendorModel.findOne({ vendorName: vendorName });
@@ -40,6 +37,7 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
             getUser.vendorInfo = createdVendor.id;
 
             await getUser.save();
+
             return res.status(HttpStatusCodes.Created).json({ message: "You can now sell!" });
         }
 
@@ -52,12 +50,10 @@ export const CreateVendor = async (req: Request, res: Response, next: NextFuncti
 };
 
 
-
 //^ UPDATE VENDOR INFO
 export const UpdateVendor = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { vendorID, vendorName, vendorDesc } = <ICreateVendor>req.body;
-        console.log(req.body)
 
         const existingVendor = await VendorModel.findOne({ _id: vendorID });
 
@@ -79,12 +75,10 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
 };
 
 
-
 //^ UPDATE VENDOR BANNER
 export const UpdateVendorBanner = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { vendorID } = req.body;
-        console.log(vendorID)
         const existingVendor = await VendorModel.findOne({ _id: vendorID });
 
         if (existingVendor) {

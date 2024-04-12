@@ -8,7 +8,7 @@ router.post("/user/register", CreateUser);
 router.post("/user/login", Login);
 router.post("/user/verify-token", VerifyUserToken);
 router.get("/get-users", GetAllUser);
-router.get("/get-user/:userID", GetUserById);
+router.post("/get-user", GetUserById);
 
 router.post("/change-password", ChangePassword);
 
