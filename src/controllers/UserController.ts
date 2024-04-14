@@ -91,9 +91,6 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
         }
 
         const getUser = await UserModel.findOne({ _id: userID }, '-password -__v -createdAt -updatedAt').populate("orders", '-__v -createdAt -updatedAt');
-
-
-        console.log(getUser)
         if (!getUser) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }

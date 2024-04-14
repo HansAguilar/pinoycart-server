@@ -6,7 +6,7 @@ export interface IAddItem {
     itemCategory: string;
     itemStock: number;
     itemImages: string[];
-    userID?: string
+    vendorID: string
 };
 
 

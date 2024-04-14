@@ -5,10 +5,10 @@ import { IAddItem, IAddReview } from "../dto/Items.dto";
 
 //^ ADD ITEM
 export const AddItem = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemName, itemDesc, itemCategory, itemPrice, itemStock, userID } = <IAddItem>req.body;
+    const { itemName, itemDesc, itemCategory, itemPrice, itemStock, vendorID } = <IAddItem>req.body;
 
     try {
-        const getVendor = await VendorModel.findOne({ userID: userID });
+        const getVendor = await VendorModel.findOne({ _id: vendorID });
 
         if (getVendor) {
             const files = req.files as [Express.Multer.File];
@@ -42,14 +42,14 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
 
 //^ UPDATE ITEM
 export const UpdateItemByID = async (req: Request, res: Response, next: NextFunction) => {
-    const { itemID, itemName, itemDesc, itemCategory, itemPrice, itemStock } = <IAddItem>req.body;
-    const user = req.user;
+    const { vendorID, itemID, itemName, itemDesc, itemCategory, itemPrice, itemStock } = <IAddItem>req.body;
 
     try {
-        const getVendor = await VendorModel.findOne({ userID: user?._id });
+        const getVendor = await VendorModel.findOne({ _id: vendorID });
 
         if (getVendor) {
             const getItem = await ItemModel.findById(itemID);
+
             if (getItem) {
                 const files = req.files as [Express.Multer.File];
                 const images = files.map((file: Express.Multer.File) => file.filename);
@@ -70,13 +70,16 @@ export const UpdateItemByID = async (req: Request, res: Response, next: NextFunc
 
                 if (updatedItem.acknowledged) {
                     return res.status(HttpStatusCodes.Created).json({ message: "Item Updated!" });
-                } else {
+                } 
+                else {
                     return res.status(HttpStatusCodes.BadRequest).json({ message: "No matching document found for update." });
                 }
-            } else {
+            } 
+            else {
                 return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found" });
             }
         }
+
         return res.status(HttpStatusCodes.Unauthorized).json({ message: "You are not a vendor" });
     } catch (error) {
         console.log(error);
@@ -101,7 +104,6 @@ export const GetAllItems = async (req: Request, res: Response, next: NextFunctio
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 
@@ -139,8 +141,6 @@ export const GetItemByID = async (req: Request, res: Response, next: NextFunctio
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
-
-
 
 
 

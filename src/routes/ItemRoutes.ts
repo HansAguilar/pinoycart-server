@@ -20,7 +20,6 @@ const imageStorage = multer.diskStorage({
 
 const images = multer({ storage: imageStorage }).array("images", 5);
 
-
 router.get("/get-items", GetAllItems);
 router.get("/get-item/:itemID", GetItemByID);
 
