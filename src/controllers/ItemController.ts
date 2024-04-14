@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { ItemModel, ReviewModel, UserModel, VendorModel } from "../models";
-import { HttpStatusCodes, applyRandomDiscount, isValidObjectId } from "../utility";
+import { HttpStatusCodes, isValidObjectId } from "../utility";
 import { IAddItem, IAddReview } from "../dto/Items.dto";
+import cloudinary from "../services/Cloudinary";
+import { Readable } from 'stream';
 
 //^ ADD ITEM
 export const AddItem = async (req: Request, res: Response, next: NextFunction) => {
@@ -10,9 +12,43 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
     try {
         const getVendor = await VendorModel.findOne({ _id: vendorID });
 
+        if (!getVendor) {
+            return res.status(HttpStatusCodes.OK).json({ message: "You are not a vendor" });
+        }
+
         if (getVendor) {
-            const files = req.files as [Express.Multer.File];
-            const images = files.map((file: Express.Multer.File) => file.filename);
+            let images = [];
+            let uploadPromises = []; // Array to store promises returned by cloudinary.uploader.upload
+
+            // Upload each file to Cloudinary and store the URLs
+            for (const file of req.files as any[]) {
+                const fileStream = Readable.from(file.buffer); // Convert buffer to readable stream
+
+                // Convert the readable stream to a Base64-encoded string
+                let base64String = '';
+                fileStream.on('data', (chunk) => {
+                    base64String += chunk.toString('base64');
+                });
+
+                // Create a promise for each upload operation
+                const uploadPromise = new Promise((resolve, reject) => {
+                    fileStream.on('end', async () => {
+                        try {
+                            // Upload the Base64-encoded string to Cloudinary
+                            const result = await cloudinary.uploader.upload(`data:${file.mimetype};base64,${base64String}`, {
+                                public_id: `item-${itemName}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+                            });
+                            resolve(result.secure_url);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                });
+
+                uploadPromises.push(uploadPromise);
+            }
+
+            images = await Promise.all(uploadPromises);
 
             const itemCreated = await ItemModel.create({
                 vendorID: getVendor._id,
@@ -29,8 +65,6 @@ export const AddItem = async (req: Request, res: Response, next: NextFunction) =
             await Promise.all([itemCreated.save(), getVendor.save()]);
             return res.status(HttpStatusCodes.Created).json({ message: "Item Added!" });
         }
-
-        return res.status(HttpStatusCodes.Created).json({ message: "You are not a vendor" });
     }
     catch (error) {
         console.log(error);
@@ -70,11 +104,11 @@ export const UpdateItemByID = async (req: Request, res: Response, next: NextFunc
 
                 if (updatedItem.acknowledged) {
                     return res.status(HttpStatusCodes.Created).json({ message: "Item Updated!" });
-                } 
+                }
                 else {
                     return res.status(HttpStatusCodes.BadRequest).json({ message: "No matching document found for update." });
                 }
-            } 
+            }
             else {
                 return res.status(HttpStatusCodes.NotFound).json({ message: "Item not found" });
             }

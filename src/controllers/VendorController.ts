@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ICreateVendor } from "../dto/Vendor.dto";
 import { ItemModel, UserModel, VendorModel } from "../models";
 import { HttpStatusCodes } from "../utility";
+import cloudinary from "../services/Cloudinary";
 
 
 //^ CREATE VENDOR
@@ -79,27 +80,41 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
 export const UpdateVendorBanner = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { vendorID } = req.body;
+        console.log(req.file)
         const existingVendor = await VendorModel.findOne({ _id: vendorID });
 
-        if (existingVendor) {
-            const file = req.file;
-
-            if (file) {
-                existingVendor.vendorBanner = file!.filename;
-
-                await existingVendor.save();
-                return res.status(HttpStatusCodes.OK).json({ message: "Vendor banner updated successfully" });
-            }
-            else {
-                return res.status(HttpStatusCodes.BadRequest).json({ message: "No image file" })
-            }
+        if (!existingVendor) {
+            return res.status(HttpStatusCodes.Forbidden).json({ message: "You are not authorized!" });
         }
 
-        else {
-            return res.status(HttpStatusCodes.Forbidden).json({ message: "You are not authorized!" })
+        const file = req.file;
+
+        if (!file) {
+            return res.status(HttpStatusCodes.BadRequest).json({ message: "No image file provided" });
         }
+
+        // Check if the uploaded file is an image
+        if (!file.mimetype.startsWith('image')) {
+            return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid image file format" });
+        }
+
+        // Upload the file buffer to Cloudinary
+        const result = await cloudinary.uploader.upload(file.filename, {
+            public_id: `vendor_${existingVendor.vendorName}_${Date.now()}` // Unique public ID for the uploaded image
+        });
+
+        // Update the vendor's banner URL in the database with the Cloudinary URL
+        existingVendor.vendorBanner = result.secure_url;
+
+        // Save the changes to the database
+        await existingVendor.save();
+
+        // Optionally, delete the previous banner file from the local server if needed
+
+        return res.status(HttpStatusCodes.OK).json({ message: "Vendor banner updated successfully", imageUrl: result.secure_url });
     }
     catch (error) {
+        console.error(error);
         return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
     }
 };
