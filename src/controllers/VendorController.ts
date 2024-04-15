@@ -80,7 +80,11 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
 export const UpdateVendorBanner = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { vendorID } = req.body;
-        console.log(req.file)
+        console.log("oh bakit", req.file)
+        console.log(vendorID)
+
+        return res.status(HttpStatusCodes.BadRequest).json({ message: "No image file provided" });
+
         const existingVendor = await VendorModel.findOne({ _id: vendorID });
 
         if (!existingVendor) {

@@ -18,16 +18,29 @@ const router = express.Router();
 //     }
 // });
 // const images = multer({ storage: imageStorage }).array("images", 5);
-const imageStorage = multer.memoryStorage();
-const image = multer({ storage: imageStorage }).single("image");
+// const imageStorage = multer.memoryStorage();
+
+// const image = multer({ storage: imageStorage }).single("image");
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+const uploadToCloudinary = (req, res, next) => {
+    upload.single('image')(req, res, async function (err) {
+        if (req.file) {
+            console.log("pre", req.file)
+        }
+        next();
+    });
+};
+
 
 router.get("/get-vendors", GetAllVendor);
 router.post("/get-vendor", GetVendorById);
 
 // router.use(Authenticate);
 
-router.post("/update-vendor-banner", UpdateVendorBanner);
-router.post("/create-vendor", image, CreateVendor);
+router.patch("/update-vendor-banner", uploadToCloudinary, UpdateVendorBanner);
+router.post("/create-vendor", CreateVendor);
 router.patch("/update-vendor", UpdateVendor);
 
 export { router as VendorRoutes }

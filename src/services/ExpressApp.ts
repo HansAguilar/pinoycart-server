@@ -1,4 +1,4 @@
-import express, { Application } from "express";
+import express, { Application, Response } from "express";
 import cors from "cors";
 import { ItemRoutes, UserRoutes, VendorRoutes, PaymentRoutes } from "../routes";
 import cookieParser from 'cookie-parser';
@@ -12,6 +12,10 @@ export default async (app: Application) => {
     app.use(cookieParser());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+    app.use((req, res: Response, next) => {
+        res.setHeader("Access-Control-Allow-Origin", "*")
+        next();
+    });
 
     app.use('/uploads', express.static('uploads'));
 
