@@ -80,10 +80,6 @@ export const UpdateVendor = async (req: Request, res: Response, next: NextFuncti
 export const UpdateVendorBanner = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { vendorID } = req.body;
-        console.log("oh bakit", req.file)
-        console.log(vendorID)
-
-        return res.status(HttpStatusCodes.BadRequest).json({ message: "No image file provided" });
 
         const existingVendor = await VendorModel.findOne({ _id: vendorID });
 
@@ -102,9 +98,11 @@ export const UpdateVendorBanner = async (req: Request, res: Response, next: Next
             return res.status(HttpStatusCodes.BadRequest).json({ message: "Invalid image file format" });
         }
 
+        console.log("req: ", req.file.path);
+
         // Upload the file buffer to Cloudinary
-        const result = await cloudinary.uploader.upload(file.filename, {
-            public_id: `vendor_${existingVendor.vendorName}_${Date.now()}` // Unique public ID for the uploaded image
+        const result = await cloudinary.uploader.upload(file.path, {
+            public_id: `vendor_${existingVendor.vendorName}_${Date.now()}`, // Unique public ID for the uploaded image
         });
 
         // Update the vendor's banner URL in the database with the Cloudinary URL
@@ -119,7 +117,7 @@ export const UpdateVendorBanner = async (req: Request, res: Response, next: Next
     }
     catch (error) {
         console.error(error);
-        return res.status(HttpStatusCodes.InternalServerError).json({ message: "Internal Server Error" });
+        return res.status(HttpStatusCodes.InternalServerError).json({ message: error });
     }
 };
 

@@ -22,14 +22,23 @@ const router = express.Router();
 
 // const image = multer({ storage: imageStorage }).single("image");
 
-const upload = multer({ storage: multer.memoryStorage() });
+
+const imageStorage = multer.diskStorage({
+    filename: function (req, file, cb) {
+        cb(null, file.originalname)
+    }
+});
+
+
+const upload = multer({ storage: imageStorage })
 
 const uploadToCloudinary = (req, res, next) => {
     upload.single('image')(req, res, async function (err) {
         if (req.file) {
-            console.log("pre", req.file)
+            console.log("pre", req.file);
+            next();
+            // You can proceed with uploading to Cloudinary here
         }
-        next();
     });
 };
 

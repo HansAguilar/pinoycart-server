@@ -90,14 +90,13 @@ export const GetUserById = async (req: Request, res: Response, next: NextFunctio
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }
 
-        const getUser = await UserModel.findOne({ _id: userID }, '-password -__v -createdAt -updatedAt').populate("orders", '-__v -createdAt -updatedAt');
+        const getUser = await UserModel.findOne({ _id: userID }, '-password -__v -createdAt -updatedAt');
+
         if (!getUser) {
             return res.status(HttpStatusCodes.NotFound).json({ message: "User not found!" });
         }
 
-        else {
-            return res.status(HttpStatusCodes.OK).json({ data: getUser });
-        }
+        return res.status(HttpStatusCodes.OK).json({ data: getUser });
     }
     catch (error) {
         return res.status(HttpStatusCodes.InternalServerError).json({ message: error });
