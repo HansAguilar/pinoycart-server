@@ -15,8 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const ExpressApp_1 = __importDefault(require("./services/ExpressApp"));
 const Database_1 = __importDefault(require("./services/Database"));
+const app = (0, express_1.default)();
+//
 const StartServer = () => __awaiter(void 0, void 0, void 0, function* () {
-    const app = (0, express_1.default)();
     yield (0, Database_1.default)();
     yield (0, ExpressApp_1.default)(app);
     app.listen(3000, () => {
@@ -24,4 +25,5 @@ const StartServer = () => __awaiter(void 0, void 0, void 0, function* () {
     });
 });
 StartServer();
+exports.default = app;
 //# sourceMappingURL=app.js.map
