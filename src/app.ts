@@ -2,8 +2,9 @@ import express from "express";
 import ExpressApp from "./services/ExpressApp";
 import Database from "./services/Database";
 
+const app = express();
+
 const StartServer = async () => {
-    const app = express();
 
     await Database();
     await ExpressApp(app);
@@ -14,3 +15,4 @@ const StartServer = async () => {
 };
 
 StartServer();
+export default app
