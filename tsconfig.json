@@ -12,5 +12,5 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false
   },
-  "include": ["./api/*.ts"]
+  "include": ["./api/*"]
 }
