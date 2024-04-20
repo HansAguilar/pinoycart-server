@@ -7,7 +7,7 @@ export default async (app: Application) => {
     app.use(cors({
         credentials: true,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-        origin: '*',
+        origin: 'https://pinoycart-client.vercel.app',
     })); //! this solves the cors problem in frontend
     app.use(cookieParser());
     app.use(express.json());
