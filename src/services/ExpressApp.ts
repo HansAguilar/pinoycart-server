@@ -4,10 +4,7 @@ import { ItemRoutes, UserRoutes, VendorRoutes, PaymentRoutes } from "../routes";
 import cookieParser from 'cookie-parser';
 
 export default async (app: Application) => {
-    app.use(cors({
-        credentials: true,
-        origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://pinoycart-server.vercel.app/', 'https://pinoycart-server.vercel.app'] // Add your local frontend URLs
-    }));
+    app.use(cors());
     app.use(cookieParser());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
