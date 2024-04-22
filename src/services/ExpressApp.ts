@@ -6,26 +6,35 @@ import cookieParser from 'cookie-parser';
 export default async (app: Application) => {
     // Configure CORS middleware for all routes
     app.use(cors({
-        origin: '*', // Adjust the origin as per your requirements or based on environment
+        origin: 'https://pinoycart-client.vercel.app', // Only allow this specific origin
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Ensure OPTIONS is included
         allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-        // If your client needs to send cookies with requests
-        preflightContinue: false,  // Don't pass the request to next router if the preflight request is successful
+        credentials: true,  // Necessary if you're sending credentials like cookies
         optionsSuccessStatus: 200  // Some legacy browsers (IE11, various SmartTVs) choke on 204
     }));
+    
 
     // Middleware for cookies and body parsing
     app.use(cookieParser());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+    app.options('*', cors()); // Include before your other routes
 
-    // API routes
-    app.use("/api/v1", [UserRoutes, VendorRoutes, ItemRoutes, PaymentRoutes]);
+    app.use((req, res, next) => {
+        console.log('Request Type:', req.method);
+        console.log('Request URL:', req.url);
+        console.log('Request Headers:', req.headers);
+        next();
+    });
+
 
     // Simple root route
     app.get("/", (req, res) => {
         res.json({ message: "Welcome to the API" });
     });
+
+    // API routes
+    app.use("/api/v1", [UserRoutes, VendorRoutes, ItemRoutes, PaymentRoutes]);
 
     return app;
 };
