@@ -1,39 +1,56 @@
-import express, { Application } from "express";
+import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
-import { ItemRoutes, UserRoutes, VendorRoutes, PaymentRoutes } from "../routes";
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';  // Import rate-limiting package
+import { ItemRoutes, UserRoutes, VendorRoutes, PaymentRoutes } from "../routes";
 
-export default async (app: Application) => {
-    // Configure CORS middleware for all routes
+export default async (app: Application): Promise<Application> => {
+    // Enable CORS with specific settings
     app.use(cors({
-        origin: '*', // Only allow this specific origin
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Ensure OPTIONS is included
+        origin: '*', // Allows all domains; consider restricting in production
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-         // Necessary if you're sending credentials like cookies
-        optionsSuccessStatus: 200  // Some legacy browsers (IE11, various SmartTVs) choke on 204
+        credentials: true, // Enable sending of credentials over CORS
+        optionsSuccessStatus: 200 // Compatibility for legacy browsers
     }));
-    
 
-    // Middleware for cookies and body parsing
+    // Enable pre-flight across-the-board
+    app.options('*', cors());
+
+    // Apply rate limiting
+    const limiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 100, // Limit each IP to 100 requests per window (15 minutes)
+        standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+        legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    });
+
+    // Apply the rate limiter to all requests
+    app.use(limiter);
+
+    // Middleware for parsing cookies
     app.use(cookieParser());
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
-    app.options('*', cors()); // Include before your other routes
 
-    app.use((req, res, next) => {
+    // Middleware for parsing application/json
+    app.use(express.json());
+
+    // Middleware for parsing application/x-www-form-urlencoded
+    app.use(express.urlencoded({ extended: true }));
+
+    // Simple logger for this example
+    app.use((req: Request, res: Response, next: NextFunction) => {
         console.log('Request Type:', req.method);
         console.log('Request URL:', req.url);
         console.log('Request Headers:', req.headers);
         next();
     });
 
-
-    // Simple root route
-    app.get("/", (req, res) => {
+    // Root route
+    app.get("/", (req: Request, res: Response) => {
         res.json({ message: "Welcome to the API" });
     });
 
-    // API routes
+    // Group API routes
     app.use("/api/v1", [UserRoutes, VendorRoutes, ItemRoutes, PaymentRoutes]);
 
     return app;
