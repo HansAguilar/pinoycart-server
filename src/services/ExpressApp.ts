@@ -6,10 +6,10 @@ import cookieParser from 'cookie-parser';
 export default async (app: Application) => {
     // Configure CORS middleware for all routes
     app.use(cors({
-        origin: 'https://pinoycart-client.vercel.app', // Only allow this specific origin
+        origin: '*', // Only allow this specific origin
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Ensure OPTIONS is included
         allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-        credentials: true,  // Necessary if you're sending credentials like cookies
+         // Necessary if you're sending credentials like cookies
         optionsSuccessStatus: 200  // Some legacy browsers (IE11, various SmartTVs) choke on 204
     }));
     
